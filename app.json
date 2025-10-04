@@ -1,0 +1,97 @@
+{
+  "expo": {
+    "name": "PocketShield.io",
+    "slug": "pocketshieldai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.pocketshield.security",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "PocketShield.io needs location access for network security monitoring.",
+        "NSCameraUsageDescription": "PocketShield.io needs camera access for QR code scanning.",
+        "NSMicrophoneUsageDescription": "PocketShield.io needs microphone access for voice commands."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "io.pocketshield.security",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "READ_PHONE_STATE",
+        "PACKAGE_USAGE_STATS",
+        "SYSTEM_ALERT_WINDOW",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "pocketshield"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "plugins": [
+      [
+        "expo-background-fetch",
+        {
+          "startOnBoot": true,
+          "minimumInterval": 900
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4CAF50"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "131dcf70-b150-4941-860e-7dbe0e901efb"
+      }
+    },
+    "owner": "suresh_seema",
+    "description": "Advanced Android security monitoring and threat detection app",
+    "keywords": [
+      "security",
+      "android",
+      "threat-detection",
+      "vulnerability-scanning",
+      "network-monitoring",
+      "pocketshield"
+    ],
+    "primaryColor": "#4CAF50",
+    "backgroundColor": "#1a1a2e"
+  }
+} 
