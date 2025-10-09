@@ -60,27 +60,7 @@
         }
       ]
     },
-    "plugins": [
-      [
-        "expo-background-fetch",
-        {
-          "startOnBoot": true,
-          "minimumInterval": 900
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#4CAF50"
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "131dcf70-b150-4941-860e-7dbe0e901efb"
-      }
-    },
+    "plugins": [],
     "owner": "suresh_seema",
     "description": "Advanced Android security monitoring and threat detection app",
     "keywords": [
