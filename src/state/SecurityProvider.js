@@ -440,36 +440,65 @@ export const SecurityProvider = ({ children }) => {
   const generateAIResponse = async (message) => {
     const lowerMessage = message.toLowerCase();
     
-    // AI response logic based on message content
+    // Enhanced AI response logic with more intelligent analysis
     if (lowerMessage.includes('network') || lowerMessage.includes('traffic')) {
-      return `I've analyzed your network traffic and found ${securityState.networkConnections.length} active connections. 
+      const connections = securityState.networkConnections;
+      const highRisk = connections.filter(c => c.status === 'dangerous').length;
+      const mediumRisk = connections.filter(c => c.status === 'warning').length;
+      const safe = connections.filter(c => c.status === 'secure').length;
       
-🔴 **High Risk**: 1 connection to suspicious-server.com (unencrypted HTTP)
-🟡 **Medium Risk**: 2 connections with data collection concerns
-🟢 **Safe**: 5 connections with proper encryption
+      return `🔍 **Network Security Analysis** (${connections.length} active connections)
 
-**Recommendations:**
-• Block the suspicious connection immediately
-• Review Facebook's privacy settings
-• Enable VPN for additional protection
+📊 **Risk Distribution:**
+🔴 **High Risk**: ${highRisk} connections (immediate action required)
+🟡 **Medium Risk**: ${mediumRisk} connections (review recommended)
+🟢 **Safe**: ${safe} connections (properly secured)
 
-Would you like me to show detailed analysis of any specific connection?`;
+🚨 **Critical Issues Detected:**
+${connections.filter(c => c.status === 'dangerous').map(c => 
+  `• ${c.app} → ${c.destination} (${c.protocol}) - ${c.details?.aiAnalysis || 'Suspicious activity detected'}`
+).join('\n')}
+
+🛡️ **AI Recommendations:**
+${highRisk > 0 ? '• **URGENT**: Block all high-risk connections immediately\n' : ''}${mediumRisk > 0 ? '• Review and restrict medium-risk app permissions\n' : ''}• Enable network monitoring for continuous protection
+• Consider using VPN for additional security layer
+
+💡 **Pro Tip**: I can help you block specific connections or analyze any suspicious activity in detail. Just ask!`;
     }
     
     if (lowerMessage.includes('vulnerability') || lowerMessage.includes('vuln')) {
-      return `I've identified ${securityState.vulnerabilities.length} vulnerabilities on your device:
+      const vulns = securityState.vulnerabilities;
+      const critical = vulns.filter(v => v.severity === 'high').length;
+      const medium = vulns.filter(v => v.severity === 'medium').length;
+      const low = vulns.filter(v => v.severity === 'low').length;
+      
+      return `🛡️ **Vulnerability Assessment** (${vulns.length} issues found)
 
-🔴 **Critical (1)**: Outdated Android version - Update immediately
-🟡 **Medium (2)**: WiFi security and app permissions
-🟢 **Low (1)**: Screen lock not enabled
+📊 **Severity Breakdown:**
+🔴 **Critical**: ${critical} vulnerabilities (immediate action required)
+🟡 **Medium**: ${medium} vulnerabilities (address within 48 hours)
+🟢 **Low**: ${low} vulnerabilities (address when convenient)
 
-**Priority Actions:**
-1. Update Android to version 13+
-2. Connect to secure WiFi network
-3. Review app permissions
-4. Enable screen lock
+🚨 **Critical Vulnerabilities:**
+${vulns.filter(v => v.severity === 'high').map(v => 
+  `• **${v.title}** (Risk Score: ${v.riskScore}/10)
+  ${v.aiInsight}
+  **Action**: ${v.remediation}`
+).join('\n\n')}
 
-The most critical issue is your outdated Android version, which exposes you to 67% of known mobile threats.`;
+🎯 **AI-Powered Priority Matrix:**
+${vulns.sort((a, b) => b.riskScore - a.riskScore).slice(0, 3).map((v, i) => 
+  `${i + 1}. **${v.title}** - ${v.riskScore}/10 risk
+   Impact: ${v.aiInsight}
+   Effort: ${v.severity === 'high' ? 'Low' : 'Medium'}`
+).join('\n\n')}
+
+💡 **Smart Recommendations:**
+• Start with the highest risk score vulnerabilities first
+• Batch similar fixes together (e.g., all permission reviews)
+• Set up automatic security updates where possible
+
+🔍 **Want deeper analysis?** Ask me about any specific vulnerability for detailed remediation steps!`;
     }
     
     if (lowerMessage.includes('app') || lowerMessage.includes('application')) {

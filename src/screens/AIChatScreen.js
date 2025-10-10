@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,65 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSecurity } from '../state/SecurityProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Animatable from 'react-native-animatable';
 
 export default function AIChatScreen() {
-  const { aiChat, sendMessageToAI } = useSecurity();
+  const { aiChat, sendMessageToAI, securityState } = useSecurity();
   const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const scrollViewRef = useRef();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    // Animate welcome screen
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  useEffect(() => {
+    // Generate smart suggestions based on current security state
+    generateSmartSuggestions();
+  }, [securityState]);
+
+  const generateSmartSuggestions = () => {
+    const newSuggestions = [];
+    
+    if (securityState.vulnerabilities.length > 0) {
+      newSuggestions.push('Fix my vulnerabilities');
+    }
+    
+    if (securityState.threats.length > 0) {
+      newSuggestions.push('Analyze active threats');
+    }
+    
+    if (securityState.networkConnections.length > 0) {
+      newSuggestions.push('Review network connections');
+    }
+    
+    if (securityState.securityScore < 70) {
+      newSuggestions.push('Improve my security score');
+    }
+    
+    setSuggestions(newSuggestions);
+  };
 
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
@@ -30,27 +80,40 @@ export default function AIChatScreen() {
     }
   };
 
-  const renderMessage = (message) => {
+  const renderMessage = (message, index) => {
     const isAI = message.sender === 'ai';
     
     return (
-      <View key={message.id} style={[styles.messageContainer, isAI ? styles.aiMessage : styles.userMessage]}>
+      <Animatable.View 
+        key={message.id} 
+        animation="fadeInUp" 
+        duration={600}
+        delay={index * 100}
+        style={[styles.messageContainer, isAI ? styles.aiMessage : styles.userMessage]}
+      >
         <View style={[styles.messageBubble, isAI ? styles.aiBubble : styles.userBubble]}>
-          <Text style={[styles.messageText, isAI ? styles.aiText : styles.userText]}>
-            {message.text}
-          </Text>
-          <View style={styles.messageTime}>
-            <Text style={styles.timeText}>
-              {new Date(message.id).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {isAI && (
+            <View style={styles.aiAvatar}>
+              <Ionicons name="shield-checkmark" size={16} color="#4CAF50" />
+            </View>
+          )}
+          <View style={styles.messageContent}>
+            <Text style={[styles.messageText, isAI ? styles.aiText : styles.userText]}>
+              {message.text}
             </Text>
+            <View style={styles.messageTime}>
+              <Text style={styles.timeText}>
+                {new Date(message.id).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
+      </Animatable.View>
     );
   };
 
   const renderQuickPrompts = () => {
-    const prompts = [
+    const defaultPrompts = [
       'What network threats do I have?',
       'How can I improve my security score?',
       'Tell me about my vulnerabilities',
@@ -58,24 +121,48 @@ export default function AIChatScreen() {
       'What suspicious activity is detected?',
     ];
 
+    const allPrompts = [...suggestions, ...defaultPrompts].slice(0, 8);
+
     return (
-      <View style={styles.quickPromptsContainer}>
-        <Text style={styles.quickPromptsTitle}>Quick Questions:</Text>
+      <Animatable.View 
+        animation="fadeInUp" 
+        duration={800}
+        style={styles.quickPromptsContainer}
+      >
+        <Text style={styles.quickPromptsTitle}>
+          {suggestions.length > 0 ? 'Smart Suggestions:' : 'Quick Questions:'}
+        </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.promptsScroll}>
-          {prompts.map((prompt, index) => (
-            <TouchableOpacity
+          {allPrompts.map((prompt, index) => (
+            <Animatable.View
               key={index}
-              style={styles.promptButton}
-              onPress={() => {
-                setInputMessage(prompt);
-                handleSendMessage();
-              }}
+              animation="bounceIn"
+              delay={index * 100}
             >
-              <Text style={styles.promptText}>{prompt}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.promptButton,
+                  suggestions.includes(prompt) && styles.smartPromptButton
+                ]}
+                onPress={() => {
+                  setInputMessage(prompt);
+                  handleSendMessage();
+                }}
+              >
+                {suggestions.includes(prompt) && (
+                  <Ionicons name="bulb" size={14} color="#FFD700" style={styles.smartIcon} />
+                )}
+                <Text style={[
+                  styles.promptText,
+                  suggestions.includes(prompt) && styles.smartPromptText
+                ]}>
+                  {prompt}
+                </Text>
+              </TouchableOpacity>
+            </Animatable.View>
           ))}
         </ScrollView>
-      </View>
+      </Animatable.View>
     );
   };
 
@@ -108,15 +195,25 @@ export default function AIChatScreen() {
           contentContainerStyle={styles.messagesContent}
         >
           {aiChat.messages.length === 0 && (
-            <View style={styles.welcomeContainer}>
-              <Ionicons name="shield-checkmark" size={64} color="#4CAF50" />
+            <Animated.View 
+              style={[
+                styles.welcomeContainer,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }]
+                }
+              ]}
+            >
+              <Animatable.View animation="pulse" iterationCount="infinite" duration={2000}>
+                <Ionicons name="shield-checkmark" size={64} color="#4CAF50" />
+              </Animatable.View>
               <Text style={styles.welcomeTitle}>AI Security Assistant</Text>
               <Text style={styles.welcomeText}>
                 I'm here to help you understand and improve your device's security. 
                 Ask me anything about vulnerabilities, threats, network traffic, or apps.
               </Text>
               {renderQuickPrompts()}
-            </View>
+            </Animated.View>
           )}
           
           {aiChat.messages.map(renderMessage)}
@@ -336,5 +433,28 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#333',
+  },
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  messageContent: {
+    flex: 1,
+  },
+  smartPromptButton: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    borderColor: '#FFD700',
+  },
+  smartPromptText: {
+    color: '#FFD700',
+    fontWeight: '600',
+  },
+  smartIcon: {
+    marginRight: 5,
   },
 }); 
