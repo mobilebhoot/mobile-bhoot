@@ -134,6 +134,34 @@ build_ios() {
     fi
 }
 
+# Function to build iOS using Expo (alternative method)
+build_ios_expo() {
+    print_status "Building iOS using Expo export..."
+    
+    # Check if we're in the right directory
+    if [ ! -f "package.json" ]; then
+        print_error "package.json not found. Please run this script from the project root."
+        exit 1
+    fi
+    
+    # Export the app
+    print_status "Exporting Expo app..."
+    npx expo export --platform ios
+    
+    if [ $? -eq 0 ]; then
+        print_success "Export completed successfully!"
+        print_status "Your app bundle is ready in: ./dist/"
+        print_status "Next steps to test:"
+        print_status "  Option 1: Use iOS Simulator - npx expo run:ios"
+        print_status "  Option 2: Use Expo Go - npx expo start --offline"
+        print_status "  Option 3: Build with Xcode - npx expo prebuild --platform ios"
+    else
+        print_error "Export failed. Trying alternative method..."
+        print_status "Let's try running in development mode instead:"
+        print_status "npx expo start --offline"
+    fi
+}
+
 # Function to install APK on connected device
 install_android() {
     if ! command_exists adb; then
@@ -165,6 +193,7 @@ show_usage() {
     echo "Options:"
     echo "  android [debug|release]    Build Android APK"
     echo "  ios [debug|release]        Build iOS IPA"
+    echo "  ios-expo                   Build iOS using Expo export"
     echo "  all [debug|release]        Build both Android and iOS"
     echo "  install-android            Install debug APK on connected device"
     echo "  clean                      Clean all build artifacts"
@@ -173,6 +202,7 @@ show_usage() {
     echo "Examples:"
     echo "  $0 android debug           # Build debug APK"
     echo "  $0 ios release             # Build release IPA"
+    echo "  $0 ios-expo                # Build iOS using Expo"
     echo "  $0 all debug               # Build both debug versions"
     echo "  $0 install-android         # Install debug APK on device"
 }
@@ -192,6 +222,9 @@ case "$1" in
             exit 1
         fi
         build_ios "$2"
+        ;;
+    "ios-expo")
+        build_ios_expo
         ;;
     "all")
         if [ -z "$2" ]; then
