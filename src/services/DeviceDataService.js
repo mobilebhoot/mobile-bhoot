@@ -5,7 +5,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Device from 'expo-device';
 import * as Application from 'expo-application';
 import * as Network from 'expo-network';
-// import * as SMS from 'expo-sms'; // Removed due to build issues
+import * as SMS from 'expo-sms';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuration flag to switch between mock and real data

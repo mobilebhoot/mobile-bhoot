@@ -64,8 +64,8 @@ The app follows a clean, modular architecture with clear separation of concerns:
 ### Key Components
 - **Screens**: Dashboard, Security, Security Events, URL Checker, Network, Apps, AI Chat, Settings
 - **Services**: Security, SafeBrowsing, Network, Device, AI Chat, Storage, Analytics
-- **Models**: SecurityEvents, Metrics for data management
-- **Components**: URLChecker, SecurityEventsScreen for specialized functionality
+- **Models**: SimpleSecurityEvents, Metrics for data management
+- **Components**: GrafanaPanels for specialized functionality
 - **Hooks**: Custom React hooks for state management
 - **Utils**: Helper functions and utilities
 

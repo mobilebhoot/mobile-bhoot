@@ -162,30 +162,6 @@ build_ios_expo() {
     fi
 }
 
-# Function to install APK on connected device
-install_android() {
-    if ! command_exists adb; then
-        print_error "ADB not found! Please install Android SDK."
-        exit 1
-    fi
-    
-    # Check if device is connected
-    if ! adb devices | grep -q "device$"; then
-        print_error "No Android device connected!"
-        exit 1
-    fi
-    
-    local apk_file="./PocketShield-debug.apk"
-    if [ -f "$apk_file" ]; then
-        print_status "Installing APK on connected device..."
-        adb install -r "$apk_file"
-        print_success "APK installed successfully!"
-    else
-        print_error "APK file not found: $apk_file"
-        exit 1
-    fi
-}
-
 # Function to show usage
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -259,3 +235,4 @@ case "$1" in
 esac
 
 print_success "Build process completed!"
+
