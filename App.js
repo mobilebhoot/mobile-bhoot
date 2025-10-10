@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import SimpleSecurityEventsScreen from './src/screens/SimpleSecurityEventsScreen';
 import SimpleSafeBrowsingService from './src/services/SimpleSafeBrowsingService';
+import DeviceDataService from './src/services/DeviceDataService';
 
 const { width } = Dimensions.get('window');
 
@@ -35,15 +36,26 @@ export default function App() {
     appsAnalyzed: 45,
     highRiskApps: 1,
   });
+  const [deviceData, setDeviceData] = useState(null);
+  const [isRealDataMode, setIsRealDataMode] = useState(!DeviceDataService.isUsingMockData());
 
   // Initialize security services
   useEffect(() => {
     const initializeSecurity = async () => {
       try {
+        console.log('🔧 Initializing security services...');
         await SimpleSafeBrowsingService.initialize();
-        console.log('Security services initialized');
+        await DeviceDataService.initialize();
+        
+        // Load initial device data
+        const initialDeviceData = await DeviceDataService.runSecurityScan();
+        setDeviceData(initialDeviceData);
+        
+        console.log('✅ Security services initialized');
+        console.log('📱 Real data mode:', isRealDataMode);
+        console.log('🔐 Permissions:', DeviceDataService.getPermissionStatus());
       } catch (error) {
-        console.error('Error initializing security services:', error);
+        console.error('❌ Error initializing security services:', error);
       }
     };
     
@@ -60,17 +72,47 @@ export default function App() {
     { id: 'Settings', name: 'Settings', icon: '⚙️' },
   ];
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setSecurityData(prev => ({
-        ...prev,
-        securityScore: Math.floor(Math.random() * 20) + 80,
-        threats: Math.floor(Math.random() * 5),
-        lastScan: new Date(),
-      }));
+    try {
+      console.log('🔄 Refreshing security data...');
+      
+      if (isRealDataMode) {
+        // Run real device scan
+        const scanResults = await DeviceDataService.runSecurityScan();
+        setDeviceData(scanResults);
+        
+        // Update security data with real results
+        setSecurityData(prev => ({
+          ...prev,
+          securityScore: scanResults.securityScore,
+          threats: scanResults.apps.risky.length + scanResults.contacts.suspicious.length,
+          lastScan: scanResults.scanTime,
+          appsAnalyzed: scanResults.apps.total,
+          highRiskApps: scanResults.apps.risky.length,
+          deviceHealth: scanResults.device.health,
+          networkStatus: scanResults.device.network.isConnected ? 'Connected' : 'Disconnected',
+        }));
+        
+        console.log('✅ Real device scan completed');
+      } else {
+        // Use mock data
+        setTimeout(() => {
+          setSecurityData(prev => ({
+            ...prev,
+            securityScore: Math.floor(Math.random() * 20) + 80,
+            threats: Math.floor(Math.random() * 5),
+            lastScan: new Date(),
+          }));
+          setRefreshing(false);
+        }, 2000);
+        console.log('🎭 Mock data refresh completed');
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing data:', error);
+    } finally {
       setRefreshing(false);
-    }, 2000);
+    }
   };
 
   const runSecurityScan = () => {
@@ -91,6 +133,19 @@ export default function App() {
     >
       <Text style={styles.title}>Security Dashboard</Text>
       
+      {/* Data Mode Toggle */}
+      <View style={styles.modeToggle}>
+        <Text style={styles.modeLabel}>Data Mode:</Text>
+        <TouchableOpacity 
+          style={[styles.modeButton, isRealDataMode && styles.modeButtonActive]}
+          onPress={() => setIsRealDataMode(!isRealDataMode)}
+        >
+          <Text style={[styles.modeButtonText, isRealDataMode && styles.modeButtonTextActive]}>
+            {isRealDataMode ? '📱 Real Device' : '🎭 Mock Data'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Security Score Card */}
       <View style={styles.scoreCard}>
         <View style={styles.scoreHeader}>
@@ -104,6 +159,11 @@ export default function App() {
           {securityData.securityScore >= 80 ? 'Excellent' : 
            securityData.securityScore >= 60 ? 'Good' : 'Needs Attention'}
         </Text>
+        {isRealDataMode && deviceData && (
+          <Text style={styles.dataSource}>
+            📱 Real device data • Last scan: {deviceData.scanTime?.toLocaleTimeString() || 'Never'}
+          </Text>
+        )}
       </View>
 
       {/* Quick Stats */}
@@ -183,13 +243,54 @@ export default function App() {
       case 'Apps': return (
         <ScrollView style={styles.content}>
           <Text style={styles.title}>App Monitor</Text>
-          <View style={styles.appsCard}>
-            <Text style={styles.appsTitle}>Installed Apps</Text>
-            <Text style={styles.appsCount}>{securityData.appsAnalyzed} apps analyzed</Text>
-            <Text style={styles.appsStatus}>
-              {securityData.highRiskApps} high-risk app{securityData.highRiskApps !== 1 ? 's' : ''} found
-            </Text>
-          </View>
+          
+          {isRealDataMode && deviceData ? (
+            <View>
+              <View style={styles.appsCard}>
+                <Text style={styles.appsTitle}>Installed Apps</Text>
+                <Text style={styles.appsCount}>{deviceData.apps.total} apps analyzed</Text>
+                <Text style={styles.appsStatus}>
+                  {deviceData.apps.risky.length} high-risk app{deviceData.apps.risky.length !== 1 ? 's' : ''} found
+                </Text>
+                <Text style={styles.dataSource}>
+                  📱 Real device data • Last scan: {deviceData.scanTime?.toLocaleTimeString() || 'Never'}
+                </Text>
+              </View>
+
+              {/* App Permissions */}
+              <View style={styles.permissionsCard}>
+                <Text style={styles.permissionsTitle}>App Permissions</Text>
+                {Object.entries(deviceData.apps.permissions || {}).map(([permission, count]) => (
+                  <View key={permission} style={styles.permissionRow}>
+                    <Text style={styles.permissionName}>{permission.charAt(0).toUpperCase() + permission.slice(1)}</Text>
+                    <Text style={styles.permissionCount}>{count} apps</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Risky Apps */}
+              {deviceData.apps.risky.length > 0 && (
+                <View style={styles.riskyAppsCard}>
+                  <Text style={styles.riskyAppsTitle}>High-Risk Apps</Text>
+                  {deviceData.apps.risky.map((app, index) => (
+                    <View key={index} style={styles.riskyAppItem}>
+                      <Text style={styles.riskyAppName}>{app.name}</Text>
+                      <Text style={styles.riskyAppReason}>{app.reason}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.appsCard}>
+              <Text style={styles.appsTitle}>Installed Apps</Text>
+              <Text style={styles.appsCount}>{securityData.appsAnalyzed} apps analyzed</Text>
+              <Text style={styles.appsStatus}>
+                {securityData.highRiskApps} high-risk app{securityData.highRiskApps !== 1 ? 's' : ''} found
+              </Text>
+              <Text style={styles.dataSource}>🎭 Mock data mode</Text>
+            </View>
+          )}
         </ScrollView>
       );
       case 'AI Chat': return (
@@ -507,6 +608,100 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: '#4CAF50',
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#2a2a3e',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  modeLabel: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  modeButton: {
+    backgroundColor: '#333',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  modeButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  modeButtonText: {
+    color: '#ccc',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  modeButtonTextActive: {
+    color: '#fff',
+  },
+  dataSource: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  permissionsCard: {
+    backgroundColor: '#2a2a3e',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  permissionsTitle: {
+    fontSize: 18,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  permissionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  permissionName: {
+    fontSize: 14,
+    color: '#fff',
+    textTransform: 'capitalize',
+  },
+  permissionCount: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  riskyAppsCard: {
+    backgroundColor: '#2a2a3e',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  riskyAppsTitle: {
+    fontSize: 18,
+    color: '#F44336',
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  riskyAppItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  riskyAppName: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  riskyAppReason: {
+    fontSize: 12,
+    color: '#FF9800',
+    marginTop: 4,
   },
 });
 

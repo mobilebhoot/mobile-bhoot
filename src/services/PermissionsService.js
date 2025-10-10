@@ -1,17 +1,34 @@
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
+import * as Contacts from 'expo-contacts';
+import * as Location from 'expo-location';
+import * as Camera from 'expo-camera';
+import * as MediaLibrary from 'expo-media-library';
 
 export class PermissionsService {
   static async requestContactsPermission() {
-    if (Platform.OS !== 'android') {
-      return { granted: true, reason: 'iOS not supported' };
-    }
-
     try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      return {
+        granted: status === 'granted',
+        reason: status === 'granted' ? 'Granted' : 'Denied by user'
+      };
+    } catch (error) {
+      return { granted: false, reason: `Error: ${error.message}` };
+    }
+  }
+
+  static async requestSmsPermission() {
+    try {
+      // Note: SMS access is limited on iOS, using alternative approach
+      if (Platform.OS === 'ios') {
+        return { granted: false, reason: 'SMS access not available on iOS' };
+      }
+      
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+        PermissionsAndroid.PERMISSIONS.READ_SMS,
         {
-          title: 'Contacts Access',
-          message: 'PocketShield needs access to your contacts to analyze communication patterns and detect potential security risks.',
+          title: 'SMS Access',
+          message: 'PocketShield needs access to your SMS to detect phishing attempts and suspicious messages.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Deny',
           buttonPositive: 'Allow',
@@ -27,26 +44,36 @@ export class PermissionsService {
     }
   }
 
-  static async requestSmsPermission() {
-    if (Platform.OS !== 'android') {
-      return { granted: true, reason: 'iOS not supported' };
-    }
-
+  static async requestCameraPermission() {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.READ_SMS,
-        {
-          title: 'SMS Access',
-          message: 'PocketShield needs access to your SMS to detect phishing attempts and suspicious messages.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Deny',
-          buttonPositive: 'Allow',
-        }
-      );
-
+      const { status } = await Camera.requestCameraPermissionsAsync();
       return {
-        granted: granted === PermissionsAndroid.RESULTS.GRANTED,
-        reason: granted === PermissionsAndroid.RESULTS.GRANTED ? 'Granted' : 'Denied by user'
+        granted: status === 'granted',
+        reason: status === 'granted' ? 'Granted' : 'Denied by user'
+      };
+    } catch (error) {
+      return { granted: false, reason: `Error: ${error.message}` };
+    }
+  }
+
+  static async requestLocationPermission() {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      return {
+        granted: status === 'granted',
+        reason: status === 'granted' ? 'Granted' : 'Denied by user'
+      };
+    } catch (error) {
+      return { granted: false, reason: `Error: ${error.message}` };
+    }
+  }
+
+  static async requestMediaLibraryPermission() {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      return {
+        granted: status === 'granted',
+        reason: status === 'granted' ? 'Granted' : 'Denied by user'
       };
     } catch (error) {
       return { granted: false, reason: `Error: ${error.message}` };

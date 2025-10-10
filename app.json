@@ -20,8 +20,13 @@
       "buildNumber": "1.0.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "PocketShield.io needs location access for network security monitoring.",
-        "NSCameraUsageDescription": "PocketShield.io needs camera access for QR code scanning.",
-        "NSMicrophoneUsageDescription": "PocketShield.io needs microphone access for voice commands."
+        "NSCameraUsageDescription": "PocketShield.io needs camera access for QR code scanning and security analysis.",
+        "NSMicrophoneUsageDescription": "PocketShield.io needs microphone access for voice commands and security monitoring.",
+        "NSContactsUsageDescription": "PocketShield.io needs contacts access to analyze communication patterns and detect security risks.",
+        "NSPhotoLibraryUsageDescription": "PocketShield.io needs photo library access to scan for malicious files.",
+        "NSFaceIDUsageDescription": "PocketShield.io uses Face ID for secure authentication.",
+        "NSCalendarsUsageDescription": "PocketShield.io needs calendar access to monitor suspicious scheduling patterns.",
+        "NSRemindersUsageDescription": "PocketShield.io needs reminders access for security alerts."
       }
     },
     "android": {
@@ -42,7 +47,17 @@
         "CAMERA",
         "RECORD_AUDIO",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_CONTACTS",
+        "READ_SMS",
+        "READ_CALL_LOG",
+        "WRITE_CONTACTS",
+        "SEND_SMS",
+        "READ_PHONE_NUMBERS",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "VIBRATE",
+        "WAKE_LOCK"
       ],
       "intentFilters": [
         {
@@ -60,8 +75,29 @@
         }
       ]
     },
-    "plugins": [],
-    "owner": "suresh_seema",
+    "plugins": [
+      "expo-camera",
+      "expo-media-library",
+      "expo-file-system",
+      "expo-location",
+      "expo-contacts",
+      "expo-sms",
+      "expo-dev-client",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "minSdkVersion": 21
+          },
+          "ios": {
+            "deploymentTarget": "13.0"
+          }
+        }
+      ]
+    ],
+    "owner": "jyothikumar",
     "description": "Advanced Android security monitoring and threat detection app",
     "keywords": [
       "security",
@@ -72,6 +108,11 @@
       "pocketshield"
     ],
     "primaryColor": "#4CAF50",
-    "backgroundColor": "#1a1a2e"
+    "backgroundColor": "#1a1a2e",
+    "extra": {
+      "eas": {
+        "projectId": "b9d04c3e-e814-408d-8445-da342b62e21d"
+      }
+    }
   }
-} 
+}
