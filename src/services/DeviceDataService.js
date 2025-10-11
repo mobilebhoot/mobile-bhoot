@@ -174,6 +174,15 @@ class DeviceDataService {
       if (Platform.OS === 'ios') {
         return false; // Phone access not available on iOS
       }
+
+      // Check if app is ready and permissions API is available
+      if (!PermissionsAndroid || typeof PermissionsAndroid.request !== 'function') {
+        console.warn('⚠️ PermissionsAndroid not available, skipping phone permission request');
+        return false;
+      }
+
+      // Add a small delay to ensure the app is fully mounted
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_PHONE_STATE,

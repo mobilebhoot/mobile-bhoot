@@ -30,6 +30,12 @@
           <string>io.pocketshield.security</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+pocketshieldai</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1.0.0</string>
@@ -38,27 +44,43 @@
     <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
+      <false/>
+      <key>NSAllowsLocalNetworking</key>
       <true/>
-      <key>NSExceptionDomains</key>
-      <dict>
-        <key>localhost</key>
-        <dict>
-          <key>NSExceptionAllowsInsecureHTTPLoads</key>
-          <true/>
-        </dict>
-      </dict>
     </dict>
+    <key>NSCalendarsUsageDescription</key>
+    <string>PocketShield.io needs calendar access to monitor suspicious scheduling patterns.</string>
     <key>NSCameraUsageDescription</key>
-    <string>PocketShield.io needs camera access for QR code scanning.</string>
+    <string>PocketShield.io needs camera access for QR code scanning and security analysis.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>PocketShield.io needs contacts access to analyze communication patterns and detect security risks.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>PocketShield.io uses Face ID for secure authentication.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>PocketShield.io needs location access for network security monitoring.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>PocketShield.io needs microphone access for voice commands.</string>
+    <string>PocketShield.io needs microphone access for voice commands and security monitoring.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to save photos</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>PocketShield.io needs photo library access to scan for malicious files.</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>PocketShield.io needs reminders access for security alerts.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>background-processing</string>
+      <string>background-fetch</string>
+      <string>fetch</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
     <array>
-      <string>armv7</string>
+      <string>arm64</string>
     </array>
     <key>UIRequiresFullScreen</key>
     <false/>
