@@ -662,8 +662,13 @@ Try asking: "What network threats do I have?" or "How can I improve my security 
   };
 
   useEffect(() => {
-    initializeSecurity();
-    loadSettings();
+    // Add a delay to ensure the app is fully mounted before initializing
+    const timer = setTimeout(() => {
+      initializeSecurity();
+      loadSettings();
+    }, 500); // 500ms delay to ensure app is ready
+
+    return () => clearTimeout(timer);
   }, []);
 
   const value = {

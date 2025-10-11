@@ -25,6 +25,26 @@ class DeviceDataService {
     this.lastScanTime = null;
   }
 
+  // Check if app is ready for permissions
+  isAppReady() {
+    try {
+      // Check if we're in a proper React Native environment
+      if (typeof global !== 'undefined' && global.HermesInternal) {
+        return true; // Hermes engine is ready
+      }
+      
+      // Check if PermissionsAndroid is available
+      if (Platform.OS === 'android' && (!PermissionsAndroid || typeof PermissionsAndroid.request !== 'function')) {
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.warn('⚠️ App readiness check failed:', error);
+      return false;
+    }
+  }
+
   // Initialize the service and request permissions
   async initialize() {
     try {
@@ -37,11 +57,29 @@ class DeviceDataService {
 
       console.log('📱 DeviceDataService: Using REAL DEVICE DATA mode');
       
+      // Wait for app to be ready
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      while (!this.isAppReady() && attempts < maxAttempts) {
+        console.log(`⏳ Waiting for app to be ready... (attempt ${attempts + 1}/${maxAttempts})`);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
+      }
+      
+      if (!this.isAppReady()) {
+        console.warn('⚠️ App not ready after maximum attempts, proceeding with limited functionality');
+      }
+      
       // Get device information
       await this.getDeviceInfo();
       
-      // Request permissions
-      await this.requestAllPermissions();
+      // Request permissions only if app is ready
+      if (this.isAppReady()) {
+        await this.requestAllPermissions();
+      } else {
+        console.warn('⚠️ Skipping permission requests - app not ready');
+      }
       
       // Load cached data
       await this.loadCachedData();
