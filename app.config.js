@@ -74,6 +74,7 @@ export default ({ config }) => ({
     ]
   },
   plugins: [
+    'expo-font',
     'expo-media-library',
     'expo-file-system',
     'expo-location',
@@ -85,24 +86,16 @@ export default ({ config }) => ({
         android: {
           compileSdkVersion: 34,
           targetSdkVersion: 34,
-          minSdkVersion: 21
+          minSdkVersion: 23
         },
         ios: {
-          deploymentTarget: '13.0'
+          deploymentTarget: '13.4'
         }
       }
     ]
   ],
   owner: 'jyothikumar',
   description: 'Advanced Android security monitoring and threat detection app',
-  keywords: [
-    'security',
-    'android',
-    'threat-detection',
-    'vulnerability-scanning',
-    'network-monitoring',
-    'pocketshield'
-  ],
   primaryColor: '#4CAF50',
   backgroundColor: '#1a1a2e',
   extra: {

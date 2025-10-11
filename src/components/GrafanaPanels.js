@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import { LineChart, BarChart, PieChart, ProgressChart } from 'react-native-chart-kit';
+import { getSeverityColor } from '../utils/SecurityUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -360,15 +361,6 @@ export const AlertPanel = ({
 }) => {
   const [expanded, setExpanded] = useState(false);
 
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'critical': return '#F44336';
-      case 'high': return '#FF5722';
-      case 'medium': return '#FF9800';
-      case 'low': return '#4CAF50';
-      default: return '#666';
-    }
-  };
 
   const getSeverityIcon = (severity) => {
     switch (severity) {

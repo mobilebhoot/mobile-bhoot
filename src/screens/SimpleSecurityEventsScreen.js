@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import SimpleSafeBrowsingService from '../services/SimpleSafeBrowsingService';
+import { getSeverityColor, getEventTypeIcon, formatTimestamp } from '../utils/SecurityUtils';
 
 export default function SimpleSecurityEventsScreen() {
   const [dashboardData, setDashboardData] = useState(null);
@@ -56,40 +57,6 @@ export default function SimpleSecurityEventsScreen() {
     );
   };
 
-  const getSeverityColor = (severity) => {
-    const colors = {
-      low: '#4CAF50',
-      medium: '#FF9800',
-      high: '#F44336',
-      critical: '#9C27B0',
-    };
-    return colors[severity] || '#888';
-  };
-
-  const getEventTypeIcon = (type) => {
-    const icons = {
-      phishing: '🎣',
-      malware: '🦠',
-      url_threat: '🌐',
-      suspicious_download: '📥',
-      security_event: '⚠️',
-    };
-    return icons[type] || '⚠️';
-  };
-
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${diffDays}d ago`;
-  };
 
   if (!dashboardData) {
     return (

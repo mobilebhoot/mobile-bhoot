@@ -108,14 +108,21 @@ export const SecurityProvider = ({ children }) => {
     setSecurityState(prev => ({ ...prev, isScanning: true }));
     
     try {
-      // Simulate comprehensive security scan
-      const vulnerabilities = await detectVulnerabilities();
-      const threats = await detectThreats();
-      const networkConnections = await getNetworkConnections();
-      const installedApps = await getInstalledApps();
-      const deviceHealth = await getDeviceHealth();
+      console.log('🔍 Starting real device security scan...');
+      
+      // Get real device data using DeviceDataService
+      const realDeviceData = await DeviceDataService.runSecurityScan();
+      
+      // Extract real data from device scan
+      const vulnerabilities = await detectVulnerabilitiesFromRealData(realDeviceData);
+      const threats = await detectThreatsFromRealData(realDeviceData);
+      const networkConnections = await getRealNetworkConnections(realDeviceData);
+      const installedApps = realDeviceData.apps?.installed || [];
+      const deviceHealth = realDeviceData.device?.health || {};
       
       const securityScore = calculateSecurityScore(vulnerabilities, threats, deviceHealth);
+      
+      console.log(`📊 Real scan results: ${vulnerabilities.length} vulnerabilities, ${threats.length} threats, ${installedApps.length} apps`);
       
       setSecurityState(prev => ({
         ...prev,
@@ -126,9 +133,10 @@ export const SecurityProvider = ({ children }) => {
         securityScore,
         isScanning: false,
         lastScan: new Date().toISOString(),
+        realDeviceData: realDeviceData // Store real device data
       }));
 
-      // Trigger AI analysis
+      // Trigger AI analysis with real data
       await performAIAnalysis(vulnerabilities, threats, networkConnections);
       
     } catch (error) {

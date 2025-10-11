@@ -1,6 +1,7 @@
 import DeviceInfo from 'react-native-device-info';
 import NetInfo from '@react-native-community/netinfo';
 import { PermissionsAndroid, Platform } from 'react-native';
+import RealTimeProtectionService from './RealTimeProtectionService';
 
 /**
  * Advanced Security Monitoring Service
@@ -68,22 +69,26 @@ class AdvancedSecurityService {
   }
 
   /**
-   * Start real-time security monitoring
+   * Start real-time security monitoring with enhanced protection
    */
   async startMonitoring() {
     if (this.isMonitoring) return;
 
     this.isMonitoring = true;
-    console.log('🔒 Starting advanced security monitoring...');
+    console.log('🔒 Starting enhanced real-time security monitoring...');
 
-    // Monitor network traffic every 30 seconds
+    // Start real-time protection service
+    await RealTimeProtectionService.startRealTimeMonitoring();
+
+    // Enhanced monitoring with faster intervals
     this.monitoringInterval = setInterval(async () => {
       await this.analyzeNetworkTraffic();
       await this.detectAnomalies();
       await this.checkThreatIntelligence();
-    }, 30000);
+      await this.processRealTimeThreats();
+    }, 15000); // Reduced from 30s to 15s for faster response
 
-    // Initial scan
+    // Initial comprehensive scan
     await this.performInitialScan();
   }
 
@@ -95,8 +100,12 @@ class AdvancedSecurityService {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
+    
+    // Stop real-time protection service
+    RealTimeProtectionService.stopRealTimeMonitoring();
+    
     this.isMonitoring = false;
-    console.log('🛑 Advanced security monitoring stopped');
+    console.log('🛑 Enhanced security monitoring stopped');
   }
 
   /**
@@ -523,16 +532,91 @@ class AdvancedSecurityService {
   }
 
   /**
-   * Get real-time security status
+   * Process real-time threats from protection service
+   */
+  async processRealTimeThreats() {
+    try {
+      const realTimeThreats = RealTimeProtectionService.getRealTimeThreats();
+      const protectionStatus = RealTimeProtectionService.getProtectionStatus();
+      
+      // Update security status with real-time data
+      this.realTimeThreats = realTimeThreats;
+      this.protectionStats = protectionStatus;
+      
+      // Log critical threats
+      const criticalThreats = realTimeThreats.filter(threat => threat.severity === 'critical');
+      if (criticalThreats.length > 0) {
+        console.log(`🚨 ${criticalThreats.length} critical threats detected`);
+      }
+      
+      return {
+        threats: realTimeThreats,
+        stats: protectionStatus,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error processing real-time threats:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get enhanced real-time security status
    */
   getSecurityStatus() {
+    const protectionStatus = RealTimeProtectionService.getProtectionStatus();
+    
     return {
       isMonitoring: this.isMonitoring,
       lastScan: new Date().toISOString(),
-      threatLevel: 'medium', // This would be calculated from real data
-      activeThreats: 0,
-      recommendations: []
+      threatLevel: this.calculateThreatLevel(),
+      activeThreats: protectionStatus.activeThreats,
+      blockedConnections: protectionStatus.blockedConnections,
+      protectionLevel: protectionStatus.protectionLevel,
+      realTimeStats: protectionStatus.stats,
+      recommendations: this.generateRealTimeRecommendations()
     };
+  }
+
+  /**
+   * Calculate current threat level based on real-time data
+   */
+  calculateThreatLevel() {
+    const protectionStatus = RealTimeProtectionService.getProtectionStatus();
+    const activeThreats = protectionStatus.activeThreats;
+    
+    if (activeThreats === 0) return 'low';
+    if (activeThreats <= 2) return 'medium';
+    if (activeThreats <= 5) return 'high';
+    return 'critical';
+  }
+
+  /**
+   * Generate real-time recommendations
+   */
+  generateRealTimeRecommendations() {
+    const protectionStatus = RealTimeProtectionService.getProtectionStatus();
+    const recommendations = [];
+    
+    if (protectionStatus.activeThreats > 0) {
+      recommendations.push({
+        priority: 'high',
+        title: 'Active Threats Detected',
+        description: `${protectionStatus.activeThreats} active threats require immediate attention`,
+        action: 'Review and block suspicious connections'
+      });
+    }
+    
+    if (protectionStatus.blockedConnections > 0) {
+      recommendations.push({
+        priority: 'medium',
+        title: 'Connections Blocked',
+        description: `${protectionStatus.blockedConnections} connections have been blocked`,
+        action: 'Review blocked connections in network monitor'
+      });
+    }
+    
+    return recommendations;
   }
 }
 

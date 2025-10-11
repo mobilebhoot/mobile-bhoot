@@ -3,11 +3,13 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
 # Expo
 .expo/
 dist/
 web-build/
+.expo-shared/
 
 # Native
 *.orig.*
@@ -29,10 +31,23 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env*.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
 # Android
@@ -53,10 +68,13 @@ ios/Pods/
 ios/*.xcworkspace
 ios/*.xcuserstate
 ios/Podfile.lock
+ios/DerivedData/
 
 # APK files
 *.apk
 *.aab
+android-apk/
+android-build/
 
 # Temporary files
 *.tmp
@@ -72,28 +90,30 @@ generate-simple-assets.js
 .idea/
 *.swp
 *.swo
+*.sublime-*
 
 # Logs
-logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
 coverage/
-
-# nyc test coverage
-.nyc_output
+.nyc_output/
 
 # Dependency directories
 jspm_packages/
 
 # Optional npm cache directory
-.npm
+.npm/
 
 # Optional eslint cache
 .eslintcache
@@ -113,21 +133,21 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
+# parcel-bundler cache
+.cache/
+.parcel-cache/
 
 # next.js build output
-.next
+.next/
 
 # nuxt.js build output
-.nuxt
+.nuxt/
 
 # vuepress build output
-.vuepress/dist
+.vuepress/dist/
 
 # Serverless directories
-.serverless
+.serverless/
 
 # FuseBox cache
 .fusebox/
@@ -139,10 +159,73 @@ jspm_packages/
 .tern-port
 
 # Stores VSCode versions used for testing VSCode extensions
-.vscode-test
+.vscode-test/
 
 # Temporary folders
 tmp/
 temp/
-node_modules
-node_modules
+
+# Build artifacts
+build/
+dist/
+out/
+
+# Test coverage
+coverage/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# React Native
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+android/app/build/
+android/build/
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/app/release/
+android/keystore.properties
+*.hprof
+ios/build/
+ios/Pods/
+ios/*.xcworkspace
+ios/*.xcuserstate
+ios/Podfile.lock
+ios/DerivedData/
+
+# Expo specific
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# EAS
+eas.json.bak
+
+# Flipper
+android/app/src/debug/java/io/pocketshield/security/ReactNativeFlipper.java
+android/app/src/release/java/io/pocketshield/security/ReactNativeFlipper.java
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Lock files (keep package-lock.json for consistency)
+# yarn.lock
+
+# Generated files
+*.generated.*
