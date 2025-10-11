@@ -150,6 +150,15 @@ class DeviceDataService {
       if (Platform.OS === 'ios') {
         return false; // SMS access not available on iOS
       }
+
+      // Check if app is ready and permissions API is available
+      if (!PermissionsAndroid || typeof PermissionsAndroid.request !== 'function') {
+        console.warn('⚠️ PermissionsAndroid not available, skipping SMS permission request');
+        return false;
+      }
+
+      // Add a small delay to ensure the app is fully mounted
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.READ_SMS,
