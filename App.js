@@ -1,4 +1,6 @@
+import 'react-native-url-polyfill/auto';
 import React from 'react';
+import { AppRegistry } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,6 +18,8 @@ import AppMonitorScreen from './src/screens/AppMonitorScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import SecurityReportScreen from './src/screens/SecurityReportScreen';
 import AIChatScreen from './src/screens/AIChatScreen';
+import LinkScannerScreen from './src/screens/LinkScannerScreen';
+// import QRScannerScreen from './src/screens/QRScannerScreen'; // Temporarily disabled
 
 // Import components
 import TabBarIcon from './src/components/TabBarIcon';
@@ -37,6 +41,8 @@ function TabNavigator() {
             iconName = focused ? 'warning' : 'warning-outline';
           } else if (route.name === 'Network') {
             iconName = focused ? 'globe' : 'globe-outline';
+          } else if (route.name === 'Link Scanner') {
+            iconName = focused ? 'link' : 'link-outline';
           } else if (route.name === 'Apps') {
             iconName = focused ? 'apps' : 'apps-outline';
           } else if (route.name === 'AI Chat') {
@@ -82,6 +88,11 @@ function TabNavigator() {
         name="Network" 
         component={NetworkTrafficScreen}
         options={{ title: 'Network Traffic' }}
+      />
+      <Tab.Screen 
+        name="Link Scanner" 
+        component={LinkScannerScreen}
+        options={{ title: 'Link Scanner' }}
       />
       <Tab.Screen 
         name="Apps" 
@@ -137,6 +148,12 @@ export default function App() {
                 component={SecurityReportScreen}
                 options={{ title: 'Security Report' }}
               />
+              {/* QR Scanner temporarily disabled for build */}
+              {/* <Stack.Screen 
+                name="QRScanner" 
+                component={QRScannerScreen}
+                options={{ headerShown: false }}
+              /> */}
             </Stack.Navigator>
           </NavigationContainer>
           <Toast />
@@ -145,4 +162,7 @@ export default function App() {
       <StatusBar style="light" />
     </GestureHandlerRootView>
   );
-} 
+}
+
+// Register the main component
+AppRegistry.registerComponent('main', () => App); 

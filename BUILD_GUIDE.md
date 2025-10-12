@@ -32,27 +32,38 @@ npx expo run:ios
 
 ---
 
-### 🍎 Method 2: Build APK for Android
+### 🤖 Method 2: Build APK for Android (UPDATED & TESTED ✅)
 
-If you want an Android build:
+**WORKING BUILD COMMANDS:**
 
 ```bash
-# Step 1: Generate native Android files
-npx expo prebuild --platform android
+# Debug Build (for development)
+npx expo run:android
 
-# Step 2: Build APK
-cd android
-./gradlew assembleDebug
-
-# APK will be at:
-# android/app/build/outputs/apk/debug/app-debug.apk
+# Release Build (for distribution) - RECOMMENDED
+npx expo run:android --variant release
 ```
+
+**Generated Files:**
+- **Debug APK:** `android/app/build/outputs/apk/debug/app-debug.apk`
+- **Release APK:** `android/app/build/outputs/apk/release/app-release.apk` (~71.6 MB)
 
 **Installation:**
 ```bash
 # Install on connected Android device
-adb install android/app/build/outputs/apk/debug/app-debug.apk
+adb install android/app/build/outputs/apk/release/app-release.apk
 ```
+
+**Alternative Direct Gradle Build:**
+```bash
+# If you prefer direct Gradle commands
+cd android
+./gradlew assembleDebug        # For debug
+./gradlew assembleRelease      # For release
+```
+
+**Build Time:** 1-2 minutes (after initial setup)  
+**Status:** ✅ VERIFIED WORKING
 
 ---
 
@@ -161,22 +172,35 @@ npx expo run:ios
 # iOS on specific device
 npx expo run:ios --device "iPhone 14"
 
-# Android Emulator
+# Android Debug Build ✅ WORKING
 npx expo run:android
+
+# Android Release Build ✅ WORKING (RECOMMENDED)
+npx expo run:android --variant release
+
+# Android Emulator (specific)
+npx expo run:android --device "Pixel_8"
+
+# Alternative Android Builds
+cd android && ./gradlew assembleDebug
+cd android && ./gradlew assembleRelease
 
 # Clean build
 rm -rf node_modules ios android
 npm install
-npx expo run:ios
+npx expo run:android
 
 # Expo Go (fallback)
 npx expo start --offline
 
 # Export bundle
-npx expo export --platform ios
+npx expo export --platform android
 
 # Check what's running
 ps aux | grep expo
+
+# Install APK on device
+adb install android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ---

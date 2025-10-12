@@ -1,6 +1,6 @@
-# PocketShield.io 🔒
+# PocketShield 🔒
 
-Advanced Android security monitoring and threat detection app with AI-powered analysis.
+Advanced mobile security monitoring and threat detection app with AI-powered analysis.
 
 ## 🚀 Features
 
@@ -18,10 +18,10 @@ Advanced Android security monitoring and threat detection app with AI-powered an
 - **Risk Scoring** - Comprehensive security score calculation
 
 ### User Experience
-- **Modern Dark UI** - Beautiful, intuitive interface
+- **Modern Dark UI** - Beautiful, intuitive interface with PocketShield branding
 - **Real-time Alerts** - Instant notifications for security issues
 - **Detailed Reports** - Comprehensive security analysis
-- **Authentication System** - Secure sign-in/sign-up with social options
+- **Multi-Platform Authentication** - Email, Google, and Apple Sign-In support
 
 ## 📱 Screenshots
 
@@ -55,8 +55,8 @@ Advanced Android security monitoring and threat detection app with AI-powered an
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/pocketshield/pocketshield-io.git
-   cd pocketshield-io
+   git clone https://github.com/pocketshield/pocketshield.git
+   cd pocketshield
    ```
 
 2. **Install dependencies**
@@ -71,13 +71,17 @@ Advanced Android security monitoring and threat detection app with AI-powered an
 
 4. **Run on Android device/emulator**
    ```bash
-   npm run android
+   # Debug build (development)
+   npx expo run:android
+   
+   # Release build (recommended for testing)
+   npx expo run:android --variant release
    ```
 
 ## 🏗️ Project Structure
 
 ```
-pocketshield-io/
+pocketshield/
 ├── src/
 │   ├── app/
 │   │   ├── navigation/
@@ -169,11 +173,20 @@ npm run type-check
 
 ### Android
 ```bash
-# Build APK
-npm run build:android
+# Debug Build
+npx expo run:android
 
-# Build AAB (for Play Store)
-npx expo build:android --type app-bundle
+# Release Build (recommended)
+npx expo run:android --variant release
+
+# Alternative: Direct Gradle
+cd android
+./gradlew assembleDebug        # Debug APK
+./gradlew assembleRelease      # Release APK
+
+# Generated files:
+# Debug: android/app/build/outputs/apk/debug/app-debug.apk
+# Release: android/app/build/outputs/apk/release/app-release.apk
 ```
 
 ### iOS
@@ -210,9 +223,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Documentation**: [https://docs.pocketshield.io](https://docs.pocketshield.io)
-- **Website**: [https://pocketshield.io](https://pocketshield.io)
-- **Email**: support@pocketshield.io
+- **Documentation**: [https://docs.pocketshield.com](https://docs.pocketshield.com)
+- **Website**: [https://pocketshield.com](https://pocketshield.com)
+- **Email**: support@pocketshield.com
 - **Discord**: [https://discord.gg/pocketshield](https://discord.gg/pocketshield)
 
 ## 🙏 Acknowledgments
@@ -224,4 +237,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**PocketShield.io** - Your Android device's security guardian 🛡️ 
+**PocketShield** - Your mobile device's security guardian 🛡️ 

@@ -1,0 +1,21 @@
+/* SVG Icon for PocketShield.io - You can convert this to PNG */
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#1a1a2e" rx="150"/>
+  
+  <!-- Shield Shape -->
+  <path d="M512 150 L350 200 L350 450 Q350 650 512 850 Q674 650 674 450 L674 200 Z" 
+        fill="#4CAF50" stroke="#ffffff" stroke-width="8"/>
+  
+  <!-- Inner Shield -->
+  <path d="M512 200 L400 240 L400 430 Q400 580 512 750 Q624 580 624 430 L624 240 Z" 
+        fill="#2E7D32"/>
+  
+  <!-- Lock Symbol -->
+  <rect x="470" y="380" width="84" height="120" fill="#ffffff" rx="10"/>
+  <circle cx="512" cy="330" r="35" fill="none" stroke="#ffffff" stroke-width="12"/>
+  
+  <!-- "P" for PocketShield -->
+  <text x="512" y="650" font-family="Arial, sans-serif" font-size="120" font-weight="bold" 
+        fill="#ffffff" text-anchor="middle">P</text>
+</svg>

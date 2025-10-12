@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import PocketShieldLogo from '../components/PocketShieldLogo';
+import authService from '../services/authService';
+import authAPIService from '../services/authAPIService';
 
 export default function AuthScreen({ navigation }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -23,10 +26,30 @@ export default function AuthScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(null); // Track which social button is loading
 
+  // Add error boundary-like behavior
+  useEffect(() => {
+    if (!navigation) {
+      console.error('Navigation prop is missing in AuthScreen');
+      return;
+    }
+  }, [navigation]);
+
+  // Regular email/password authentication
   const handleAuth = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      Alert.alert('Error', 'Password must be at least 8 characters long');
       return;
     }
 
@@ -35,7 +58,7 @@ export default function AuthScreen({ navigation }) {
       return;
     }
 
-    if (!isLogin && !fullName) {
+    if (!isLogin && !fullName.trim()) {
       Alert.alert('Error', 'Please enter your full name');
       return;
     }
@@ -43,27 +66,186 @@ export default function AuthScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      // Simulate authentication
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // For demo purposes, always succeed
-      Alert.alert(
-        'Success', 
-        isLogin ? 'Welcome back!' : 'Account created successfully!',
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              // Navigate to main app
-              navigation.replace('Main');
-            }
+      if (isLogin) {
+        // Login logic
+        const loginResult = await authAPIService.login(email, password);
+        if (loginResult.success) {
+          if (loginResult.requiresEmailVerification) {
+            Alert.alert(
+              'Email Verification Required',
+              'Please check your email and verify your account before signing in.',
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert(
+              'Welcome Back!', 
+              `Successfully signed in as ${loginResult.user.name}`,
+              [{ text: 'Continue', onPress: () => navigateToMain() }]
+            );
           }
-        ]
-      );
+        } else {
+          Alert.alert('Login Failed', loginResult.error);
+        }
+      } else {
+        // Signup logic
+        const signupResult = await authAPIService.signup(email, password, fullName);
+        if (signupResult.success) {
+          Alert.alert(
+            'Account Created!', 
+            signupResult.message || 'Please check your email to verify your account.',
+            [{ text: 'Continue', onPress: () => navigateToMain() }]
+          );
+        } else {
+          Alert.alert('Signup Failed', signupResult.error);
+        }
+      }
     } catch (error) {
+      console.error('Auth error:', error);
       Alert.alert('Error', 'Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Google Sign-In Handler
+  const handleGoogleSignIn = async () => {
+    setSocialLoading('google');
+    try {
+      const result = await authService.signInWithGoogle();
+      
+      if (result.success) {
+        // Send to backend for verification/account creation
+        const backendResult = await authAPIService.socialAuth('google', result.tokens.accessToken, result.user);
+        
+        if (backendResult.success) {
+          Alert.alert(
+            'Welcome!',
+            `Successfully signed in with Google as ${result.user.name}`,
+            [{ text: 'Continue', onPress: () => navigateToMain() }]
+          );
+        } else {
+          Alert.alert('Authentication Failed', backendResult.error);
+        }
+      } else {
+        Alert.alert('Google Sign-In Failed', result.error);
+      }
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      Alert.alert('Error', 'Google sign-in failed. Please try again.');
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
+  // Apple Sign-In Handler
+  const handleAppleSignIn = async () => {
+    setSocialLoading('apple');
+    try {
+      const result = await authService.signInWithApple();
+      
+      if (result.success) {
+        // Send to backend for verification/account creation  
+        const backendResult = await authAPIService.socialAuth('apple', result.tokens.identityToken, result.user);
+        
+        if (backendResult.success) {
+          Alert.alert(
+            'Welcome!',
+            `Successfully signed in with Apple${result.user.name ? ` as ${result.user.name}` : ''}`,
+            [{ text: 'Continue', onPress: () => navigateToMain() }]
+          );
+        } else {
+          Alert.alert('Authentication Failed', backendResult.error);
+        }
+      } else {
+        Alert.alert('Apple Sign-In Failed', result.error);
+      }
+    } catch (error) {
+      console.error('Apple Sign-In Error:', error);
+      Alert.alert('Error', 'Apple sign-in failed. Please try again.');
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
+  // Password Reset Handler
+  const handleForgotPassword = () => {
+    Alert.prompt(
+      'Reset Password',
+      'Enter your email address to receive password reset instructions:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Send Reset Email', 
+          onPress: async (emailInput) => {
+            if (!emailInput || !validateEmail(emailInput)) {
+              Alert.alert('Error', 'Please enter a valid email address');
+              return;
+            }
+            
+            try {
+              const result = await authAPIService.requestPasswordReset(emailInput);
+              if (result.success) {
+                Alert.alert(
+                  'Reset Email Sent',
+                  result.message
+                );
+              } else {
+                Alert.alert('Error', result.error);
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to send reset email. Please try again.');
+            }
+          }
+        }
+      ],
+      'plain-text',
+      email || ''
+    );
+  };
+
+  // Navigation helper
+  const navigateToMain = () => {
+    try {
+      if (navigation && navigation.replace) {
+        navigation.replace('Main');
+      } else {
+        console.error('Navigation is not available');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
+  };
+
+  // Simulate backend authentication (replace with real API calls)
+  const simulateLogin = async (email, password) => {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Demo: Accept any email/password for now
+    if (email.includes('@') && password.length >= 8) {
+      return { success: true, user: { email, name: 'Demo User' } };
+    } else {
+      return { success: false, error: 'Invalid email or password' };
+    }
+  };
+
+  const simulateSignup = async (email, password, fullName) => {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Demo: Accept valid inputs
+    if (email.includes('@') && password.length >= 8 && fullName.trim()) {
+      return { success: true, user: { email, name: fullName } };
+    } else {
+      return { success: false, error: 'Please check your information and try again' };
+    }
+  };
+
+  const simulatePasswordReset = async (email) => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    if (email.includes('@')) {
+      return { success: true };
+    } else {
+      return { success: false, error: 'Email address not found' };
     }
   };
 
@@ -100,9 +282,8 @@ export default function AuthScreen({ navigation }) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Ionicons name="shield-checkmark" size={64} color="#4CAF50" />
-            <Text style={styles.appTitle}>Mobile Security</Text>
-            <Text style={styles.appSubtitle}>Protect your device with AI-powered security</Text>
+            <PocketShieldLogo size={80} showText={true} textSize="large" />
+            <Text style={styles.appSubtitle}>Advanced mobile security with AI-powered protection</Text>
           </View>
 
           {/* Auth Form */}
@@ -244,7 +425,7 @@ export default function AuthScreen({ navigation }) {
 
             <TouchableOpacity
               style={styles.forgotPassword}
-              onPress={() => Alert.alert('Forgot Password', 'Password reset functionality would be implemented here.')}
+              onPress={handleForgotPassword}
             >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
@@ -254,12 +435,28 @@ export default function AuthScreen({ navigation }) {
           <View style={styles.socialContainer}>
             <Text style={styles.socialTitle}>Or continue with</Text>
             <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-google" size={24} color="#DB4437" />
+              <TouchableOpacity 
+                style={[styles.socialButton, socialLoading === 'google' && styles.socialButtonLoading]}
+                onPress={handleGoogleSignIn}
+                disabled={socialLoading !== null}
+              >
+                {socialLoading === 'google' ? (
+                  <ActivityIndicator size="small" color="#DB4437" />
+                ) : (
+                  <Ionicons name="logo-google" size={24} color="#DB4437" />
+                )}
                 <Text style={styles.socialButtonText}>Google</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.socialButton}>
-                <Ionicons name="logo-apple" size={24} color="#fff" />
+              <TouchableOpacity 
+                style={[styles.socialButton, socialLoading === 'apple' && styles.socialButtonLoading]}
+                onPress={handleAppleSignIn}
+                disabled={socialLoading !== null}
+              >
+                {socialLoading === 'apple' ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="logo-apple" size={24} color="#fff" />
+                )}
                 <Text style={styles.socialButtonText}>Apple</Text>
               </TouchableOpacity>
             </View>
@@ -270,7 +467,17 @@ export default function AuthScreen({ navigation }) {
             <Text style={styles.demoText}>Demo Mode</Text>
             <TouchableOpacity
               style={styles.demoButton}
-              onPress={() => navigation.replace('Main')}
+              onPress={() => {
+                try {
+                  if (navigation && navigation.replace) {
+                    navigation.replace('Main');
+                  } else {
+                    console.error('Navigation is not available for demo mode');
+                  }
+                } catch (error) {
+                  console.error('Demo navigation error:', error);
+                }
+              }}
             >
               <Text style={styles.demoButtonText}>Skip Authentication</Text>
             </TouchableOpacity>
@@ -306,10 +513,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   appSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#ccc',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
+    marginTop: 10,
   },
   formContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -435,6 +643,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginHorizontal: 10,
+  },
+  socialButtonLoading: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   socialButtonText: {
     fontSize: 14,

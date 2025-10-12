@@ -129,7 +129,7 @@ export default function SecurityReportScreen({ navigation }) {
             <MetricCard
               title="Security Score"
               value={`${securityState.securityScore}/100`}
-              icon="shield-check"
+              icon="shield-checkmark"
               color="#4CAF50"
               subtitle="Overall security rating"
             />
@@ -264,7 +264,7 @@ export default function SecurityReportScreen({ navigation }) {
             )}
             
             <View style={styles.recommendationItem}>
-              <Ionicons name="shield-check" size={16} color="#4CAF50" />
+              <Ionicons name="shield-checkmark" size={16} color="#4CAF50" />
               <Text style={styles.recommendationText}>
                 Enable automatic security scans
               </Text>

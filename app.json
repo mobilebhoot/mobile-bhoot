@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "PocketShield.io",
-    "slug": "pocketshieldai",
+    "name": "PocketShield",
+    "slug": "pocketshield",
     "version": "1.0.0",
+    "scheme": "pocketshield",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -29,21 +30,33 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
-      "package": "io.pocketshield.security",
+      "package": "com.pocketshieldio",
       "versionCode": 1,
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "minSdkVersion": 21,
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
-        "READ_PHONE_STATE",
-        "PACKAGE_USAGE_STATS",
-        "SYSTEM_ALERT_WINDOW",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "RECORD_AUDIO",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "CAMERA"
       ],
+      "permissionsExplanation": {
+        "INTERNET": "Required for threat intelligence updates and backend API communication",
+        "ACCESS_NETWORK_STATE": "Essential for network security monitoring and analysis",
+        "RECEIVE_BOOT_COMPLETED": "Enables security monitoring to restart after device reboot",
+        "VIBRATE": "Provides haptic feedback for security alerts",
+        "WAKE_LOCK": "Ensures continuous security monitoring in background",
+        "CAMERA": "Required for QR code scanning to analyze suspicious codes for malicious links"
+      },
+      "blocksBackgroundLocationAccess": true,
+      "playStoreConfig": {
+        "dataPolicy": "https://pocketshield.com/privacy-policy",
+        "category": "PRODUCTIVITY",
+        "inAppUpdates": true
+      },
       "intentFilters": [
         {
           "action": "VIEW",
@@ -51,6 +64,36 @@
           "data": [
             {
               "scheme": "pocketshield"
+            },
+            {
+              "scheme": "https",
+              "host": "auth.pocketshield.io"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "SEND",
+          "data": [
+            {
+              "mimeType": "text/plain"
+            }
+          ],
+          "category": [
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "http"
+            },
+            {
+              "scheme": "https"
             }
           ],
           "category": [
@@ -82,16 +125,27 @@
       }
     },
     "owner": "suresh_seema",
-    "description": "Advanced Android security monitoring and threat detection app",
+    "description": "Advanced mobile security monitoring and threat detection app with AI-powered analysis. Protect your device with real-time threat detection, network monitoring, and comprehensive security analysis.",
     "keywords": [
       "security",
-      "android",
+      "mobile",
       "threat-detection",
       "vulnerability-scanning",
       "network-monitoring",
-      "pocketshield"
+      "pocketshield",
+      "ai-security",
+      "privacy-protection",
+      "device-security",
+      "malware-detection"
     ],
     "primaryColor": "#4CAF50",
-    "backgroundColor": "#1a1a2e"
+    "backgroundColor": "#1a1a2e",
+    "privacy": "https://pocketshield.com/privacy-policy",
+    "privacyPolicy": "https://pocketshield.com/privacy-policy",
+    "termsOfService": "https://pocketshield.com/terms-of-service",
+    "contact": {
+      "email": "support@pocketshield.com",
+      "website": "https://pocketshield.com"
+    }
   }
 } 

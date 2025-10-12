@@ -17,10 +17,13 @@ import { Dimensions } from 'react-native';
 const screenWidth = Dimensions.get('window').width;
 
 export default function NetworkTrafficScreen() {
-  const { networkConnections, networkAnalysis, aiAnalysis } = useSecurity();
+  const { securityState, networkAnalysis, aiAnalysis } = useSecurity();
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [filter, setFilter] = useState('all');
+
+  // Extract networkConnections from securityState with null safety
+  const networkConnections = securityState?.networkConnections ?? [];
 
   const getConnectionStatusColor = (status) => {
     switch (status) {
@@ -40,7 +43,7 @@ export default function NetworkTrafficScreen() {
     }
   };
 
-  const filteredConnections = networkConnections.filter(conn => {
+  const filteredConnections = (networkConnections ?? []).filter(conn => {
     if (filter === 'all') return true;
     return conn.status === filter;
   });
@@ -208,10 +211,10 @@ export default function NetworkTrafficScreen() {
       labels: ['Secure', 'Warning', 'Dangerous'],
       datasets: [{
         data: [
-          networkConnections.filter(c => c.status === 'secure').length,
-          networkConnections.filter(c => c.status === 'warning').length,
-          networkConnections.filter(c => c.status === 'dangerous').length,
-        ]
+          (networkConnections ?? []).filter(c => c.status === 'secure').length,
+          (networkConnections ?? []).filter(c => c.status === 'warning').length,
+          (networkConnections ?? []).filter(c => c.status === 'dangerous').length,
+        ],
       }]
     };
 
@@ -248,7 +251,7 @@ export default function NetworkTrafficScreen() {
       <View style={styles.aiInsightsContainer}>
         <Text style={styles.aiInsightsTitle}>AI Security Insights</Text>
         {aiAnalysis.recommendations
-          .filter(rec => rec.title.toLowerCase().includes('network'))
+          .filter(rec => rec?.title?.toLowerCase()?.includes('network') ?? false)
           .map((recommendation, index) => (
             <View key={index} style={styles.recommendationCard}>
               <View style={styles.recommendationHeader}>
@@ -286,21 +289,21 @@ export default function NetworkTrafficScreen() {
           <View style={styles.summaryCard}>
             <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
             <Text style={styles.summaryNumber}>
-              {networkConnections.filter(c => c.status === 'secure').length}
+              {(networkConnections ?? []).filter(c => c.status === 'secure').length}
             </Text>
             <Text style={styles.summaryLabel}>Secure</Text>
           </View>
           <View style={styles.summaryCard}>
             <Ionicons name="warning" size={24} color="#FF9800" />
             <Text style={styles.summaryNumber}>
-              {networkConnections.filter(c => c.status === 'warning').length}
+              {(networkConnections ?? []).filter(c => c.status === 'warning').length}
             </Text>
             <Text style={styles.summaryLabel}>Warning</Text>
           </View>
           <View style={styles.summaryCard}>
             <Ionicons name="alert-circle" size={24} color="#F44336" />
             <Text style={styles.summaryNumber}>
-              {networkConnections.filter(c => c.status === 'dangerous').length}
+              {(networkConnections ?? []).filter(c => c.status === 'dangerous').length}
             </Text>
             <Text style={styles.summaryLabel}>Dangerous</Text>
           </View>

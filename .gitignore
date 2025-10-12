@@ -1,0 +1,178 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# React Native / Expo
+.expo/
+dist/
+web-build/
+.expo-shared/
+
+# Native build outputs
+android/app/build/
+android/build/
+android/gradle/
+android/.gradle/
+android/local.properties
+android/app/src/main/assets/bundle
+android/app/src/main/res/drawable-*
+android/app/src/main/res/raw/
+
+ios/build/
+ios/Pods/
+ios/.xcode.env.local
+ios/DerivedData/
+*.xcworkspace
+*.xcuserdata
+
+# Build outputs
+*.apk
+*.aab
+*.ipa
+*.app
+*.dSYM.zip
+
+# Environment & Config
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+.env.*.local
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+.DS_Store?
+Icon?
+
+# Editor directories and files
+.vscode/
+.idea/
+.fleet/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+.next/
+out/
+
+# Testing
+coverage/
+*.coverage
+.nyc_output/
+.jest/
+__tests__/__coverage__/
+
+# Bundle artifacts
+*.jsbundle
+
+# CocoaPods
+ios/Pods/
+ios/Podfile.lock
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# Metro
+.metro-health-check*
+
+# EAS
+eas.json.bak
+.easignore
+
+# Local development
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+*.keystore
+*.jks
+
+# Ignore generated Android keystore files
+android/app/release-key.keystore
+android/app/debug.keystore
+android/app/upload-keystore.jks
+
+# Ignore sensitive files
+google-services.json
+GoogleService-Info.plist
+android/app/google-services.json
+ios/GoogleService-Info.plist
+
+# Analytics & Crash Reporting
+android/app/src/main/assets/appcenter-config.json
+ios/AppCenter-Config.plist
+
+# Flipper
+android/app/src/debug/java/com/*/ReactNativeFlipper.java
+ios/Flipper/
+
+# Hermes
+android/app/build/generated/
+android/app/build/intermediates/
+
+# Android Studio
+android/.idea/
+android/captures/
+android/local.properties
+android/.externalNativeBuild/
+android/.cxx/
+
+# Gradle
+android/.gradle/
+android/gradle.properties.local
+
+# React Native Debugger
+.vscode/launch.json
+
+# Temporary hack for React Native 0.73
+ios/.xcode.env.local
+
+# EAS Build
+.easignore
+eas-build-pre-install.sh
+eas-build-post-install.sh

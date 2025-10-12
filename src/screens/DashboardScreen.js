@@ -22,6 +22,17 @@ export default function DashboardScreen({ navigation }) {
   const { securityState, performSecurityScan } = useSecurity();
   const [refreshing, setRefreshing] = useState(false);
 
+  // Add null safety check
+  if (!securityState) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Initializing Security Dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const onRefresh = async () => {
     setRefreshing(true);
     await performSecurityScan();
@@ -65,21 +76,21 @@ export default function DashboardScreen({ navigation }) {
   const pieChartData = [
     {
       name: 'Secure',
-      population: securityState.vulnerabilities.filter(v => v.severity === 'low').length,
+      population: (securityState?.vulnerabilities ?? []).filter(v => v.severity === 'low').length,
       color: '#4CAF50',
       legendFontColor: '#FFFFFF',
       legendFontSize: 12,
     },
     {
       name: 'Medium Risk',
-      population: securityState.vulnerabilities.filter(v => v.severity === 'medium').length,
+      population: (securityState?.vulnerabilities ?? []).filter(v => v.severity === 'medium').length,
       color: '#FF9800',
       legendFontColor: '#FFFFFF',
       legendFontSize: 12,
     },
     {
       name: 'High Risk',
-      population: securityState.vulnerabilities.filter(v => v.severity === 'high').length,
+      population: (securityState?.vulnerabilities ?? []).filter(v => v.severity === 'high').length,
       color: '#F44336',
       legendFontColor: '#FFFFFF',
       legendFontSize: 12,
@@ -100,10 +111,10 @@ export default function DashboardScreen({ navigation }) {
     datasets: [
       {
         data: [
-          securityState.deviceHealth.battery,
-          securityState.deviceHealth.storage,
-          securityState.deviceHealth.memory,
-          securityState.deviceHealth.temperature,
+          securityState?.deviceHealth?.battery ?? 0,
+          securityState?.deviceHealth?.storage ?? 0,
+          securityState?.deviceHealth?.memory ?? 0,
+          securityState?.deviceHealth?.temperature ?? 0,
         ],
       },
     ],
@@ -205,28 +216,28 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.statsContainer}>
           <SecurityCard
             title="Vulnerabilities"
-            value={securityState.vulnerabilities.length}
+            value={securityState?.vulnerabilities?.length ?? 0}
             icon="warning"
             color="#F44336"
             onPress={() => navigation.navigate('Vulnerabilities')}
           />
           <SecurityCard
             title="Threats"
-            value={securityState.threats.length}
+            value={securityState?.threats?.length ?? 0}
             icon="shield"
             color="#FF9800"
             onPress={() => navigation.navigate('Vulnerabilities')}
           />
           <SecurityCard
             title="Apps Monitored"
-            value={securityState.installedApps.length}
+            value={securityState?.installedApps?.length ?? 0}
             icon="apps"
             color="#2196F3"
             onPress={() => navigation.navigate('Apps')}
           />
           <SecurityCard
             title="Network Connections"
-            value={securityState.networkConnections.length}
+            value={securityState?.networkConnections?.length ?? 0}
             icon="wifi"
             color="#9C27B0"
             onPress={() => navigation.navigate('Network')}
@@ -282,7 +293,7 @@ export default function DashboardScreen({ navigation }) {
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
-          {securityState.vulnerabilities.slice(0, 3).map((vulnerability) => (
+          {(securityState?.vulnerabilities ?? []).slice(0, 3).map((vulnerability) => (
             <VulnerabilityCard key={vulnerability.id} vulnerability={vulnerability} />
           ))}
         </View>
@@ -506,5 +517,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginTop: 8,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f0f23',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 10,
   },
 }); 

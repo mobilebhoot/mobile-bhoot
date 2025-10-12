@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#1e4a6b"/>
+  
+  <!-- Shield shape -->
+  <path d="M102.4 128 L409.6 128 L409.6 281.6 Q409.6 384 256 435.2 Q102.4 384 102.4 281.6 Z" fill="#2d5a87"/>
+  
+  <!-- Lock body -->
+  <rect x="179.2" y="230.4" width="153.6" height="128" rx="10.24" fill="white"/>
+  
+  <!-- Lock shackle -->
+  <path d="M204.8 230.4 Q204.8 179.2 256 179.2 Q307.2 179.2 307.2 230.4" 
+        stroke="white" stroke-width="10.24" fill="none"/>
+  
+  <!-- Lock keyhole -->
+  <circle cx="256" cy="281.6" r="12.8" fill="#1e4a6b"/>
+  <rect x="250.88" y="286.72" width="10.24" height="30.72" fill="#1e4a6b"/>
+</svg>

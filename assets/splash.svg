@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1080" height="1920" fill="#1a1a2e"/>
+  
+  <!-- Centered logo -->
+  <g transform="translate(340, 760)">
+    
+
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="200" fill="#1e4a6b"/>
+  
+  <!-- Shield shape -->
+  <path d="M80 100 L320 100 L320 220.00000000000003 Q320 300 200 340 Q80 300 80 220.00000000000003 Z" fill="#2d5a87"/>
+  
+  <!-- Lock body -->
+  <rect x="140" y="180" width="120" height="100" rx="8" fill="white"/>
+  
+  <!-- Lock shackle -->
+  <path d="M160 180 Q160 140 200 140 Q240 140 240 180" 
+        stroke="white" stroke-width="8" fill="none"/>
+  
+  <!-- Lock keyhole -->
+  <circle cx="200" cy="220.00000000000003" r="10" fill="#1e4a6b"/>
+  <rect x="196" y="224.00000000000003" width="8" height="24" fill="#1e4a6b"/>
+
+  </g>
+  
+  <!-- App name -->
+  <text x="540" y="1300" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">PocketShield</text>
+  <text x="540" y="1350" text-anchor="middle" fill="#ccc" font-family="Arial, sans-serif" font-size="24">SECURITY APP</text>
+</svg>

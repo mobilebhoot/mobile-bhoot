@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DeviceInfo from 'react-native-device-info';
+import * as Device from 'expo-device';
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import { PermissionsAndroid, Platform } from 'react-native';
 
 const SecurityContext = createContext();
@@ -25,6 +27,12 @@ export const SecurityProvider = ({ children }) => {
     isScanning: false,
     lastScan: null,
     backgroundMonitoring: false,
+    deviceHealth: {
+      battery: 85,
+      storage: 70,
+      memory: 65,
+      temperature: 45,
+    },
   });
 
   const [settings, setSettings] = useState({
@@ -61,16 +69,16 @@ export const SecurityProvider = ({ children }) => {
   const initializeSecurity = async () => {
     try {
       const deviceInfo = {
-        brand: await DeviceInfo.getBrand(),
-        model: await DeviceInfo.getModel(),
-        systemVersion: await DeviceInfo.getSystemVersion(),
-        buildNumber: await DeviceInfo.getBuildNumber(),
-        appVersion: await DeviceInfo.getVersion(),
-        uniqueId: await DeviceInfo.getUniqueId(),
-        isEmulator: await DeviceInfo.isEmulator(),
-        isTablet: await DeviceInfo.isTablet(),
-        totalMemory: await DeviceInfo.getTotalMemory(),
-        usedMemory: await DeviceInfo.getUsedMemory(),
+        brand: Device.brand || 'Unknown',
+        model: Device.modelName || 'Unknown',
+        systemVersion: Device.osVersion || 'Unknown',
+        buildNumber: Application.nativeBuildVersion || 'Unknown',
+        appVersion: Application.nativeApplicationVersion || '1.0.0',
+        uniqueId: Application.androidId || Constants.sessionId || 'unknown',
+        isEmulator: !Device.isDevice,
+        isTablet: Device.deviceType === Device.DeviceType.TABLET,
+        totalMemory: Device.totalMemory || 0,
+        usedMemory: 0, // Not available in Expo, set to 0
       };
 
       setSecurityState(prev => ({
@@ -659,7 +667,7 @@ Try asking: "What network threats do I have?" or "How can I improve my security 
   }, []);
 
   const value = {
-    ...securityState,
+    securityState,
     settings,
     aiChat,
     networkAnalysis,

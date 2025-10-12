@@ -1,0 +1,38 @@
+/* PocketShield Logo - High Resolution App Icon */
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="512" cy="512" r="512" fill="#1a1a2e"/>
+  
+  <!-- Shield Shape -->
+  <path d="M512 100 L300 160 L300 450 Q300 680 512 880 Q724 680 724 450 L724 160 Z" 
+        fill="#0f4c75" stroke="#ffffff" stroke-width="6"/>
+  
+  <!-- Inner Shield Gradient -->
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3282b8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f4c75;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Shield -->
+  <path d="M512 120 L320 170 L320 430 Q320 630 512 820 Q704 630 704 430 L704 170 Z" 
+        fill="url(#shieldGradient)"/>
+  
+  <!-- Lock Body -->
+  <rect x="420" y="420" width="184" height="160" fill="#ffffff" rx="20"/>
+  
+  <!-- Lock Shackle -->
+  <path d="M512 320 Q450 320 450 380 L450 420 L574 420 L574 380 Q574 320 512 320 Z" 
+        fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Keyhole -->
+  <circle cx="512" cy="480" r="20" fill="#0f4c75"/>
+  <rect x="502" y="500" width="20" height="40" fill="#0f4c75" rx="10"/>
+  
+  <!-- Security Dots -->
+  <circle cx="380" cy="260" r="8" fill="#4CAF50" opacity="0.8"/>
+  <circle cx="644" cy="260" r="8" fill="#4CAF50" opacity="0.8"/>
+  <circle cx="380" cy="320" r="6" fill="#4CAF50" opacity="0.6"/>
+  <circle cx="644" cy="320" r="6" fill="#4CAF50" opacity="0.6"/>
+</svg>

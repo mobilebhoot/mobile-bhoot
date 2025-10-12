@@ -1,4 +1,6 @@
-import DeviceInfo from 'react-native-device-info';
+import * as Device from 'expo-device';
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import NetInfo from '@react-native-community/netinfo';
 import { PermissionsAndroid, Platform } from 'react-native';
 
@@ -124,17 +126,17 @@ class AdvancedSecurityService {
    */
   async analyzeDeviceSecurity() {
     const deviceInfo = {
-      brand: await DeviceInfo.getBrand(),
-      model: await DeviceInfo.getModel(),
-      systemVersion: await DeviceInfo.getSystemVersion(),
-      isEmulator: await DeviceInfo.isEmulator(),
-      isTablet: await DeviceInfo.isTablet(),
-      totalMemory: await DeviceInfo.getTotalMemory(),
-      usedMemory: await DeviceInfo.getUsedMemory(),
-      batteryLevel: await DeviceInfo.getBatteryLevel(),
-      isDeviceRooted: await DeviceInfo.isDeviceRooted(),
-      hasNotch: await DeviceInfo.hasNotch(),
-      hasDynamicIsland: await DeviceInfo.hasDynamicIsland(),
+      brand: Device.brand || 'Unknown',
+      model: Device.modelName || 'Unknown',
+      systemVersion: Device.osVersion || 'Unknown',
+      isEmulator: !Device.isDevice,
+      isTablet: Device.deviceType === Device.DeviceType.TABLET,
+      totalMemory: Device.totalMemory || 0,
+      usedMemory: 0, // Not available in Expo
+      batteryLevel: 0, // Not available in Expo
+      isDeviceRooted: false, // Not available in Expo, consider implementing custom check
+      hasNotch: false, // Not available in Expo
+      hasDynamicIsland: false, // Not available in Expo
     };
 
     // Security analysis

@@ -297,7 +297,7 @@ export default function AppMonitorScreen({ navigation }) {
           <Text style={styles.quickActionsTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity style={styles.quickActionButton}>
-              <Ionicons name="shield-check" size={24} color="#4CAF50" />
+              <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
               <Text style={styles.quickActionText}>Secure All Apps</Text>
             </TouchableOpacity>
             

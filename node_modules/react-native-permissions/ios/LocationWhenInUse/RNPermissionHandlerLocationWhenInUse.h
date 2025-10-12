@@ -1,4 +1,4 @@
-#import "RNPermissionsHelper.h"
+#import "RNPermissions.h"
 
 @interface RNPermissionHandlerLocationWhenInUse : NSObject<RNPermissionHandler>
 
