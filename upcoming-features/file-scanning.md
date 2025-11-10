@@ -105,36 +105,34 @@ This document defines the **feature set**, **architecture**, and **implementatio
 
 ## 3. High-Level Architecture
 
-```mermaid
 flowchart LR
-  subgraph Device
-    UI[Mobile UI / Scan Controls]
-    Watchers[FileObservers / MediaStore Observers / Receivers]
-    Worker[WorkManager Job Queue]
-    Engine[Scan Engine (Kotlin ↔ NDK)]
-    CacheDB[Room DB: Cache + Audit]
-    Quarantine[Encrypted Storage]
-  end
+subgraph Device
+UI[Mobile UI / Scan Controls]
+Watchers[FileObservers / MediaStore Observers / Receivers]
+Worker[WorkManager Job Queue]
+Engine[Scan Engine (Kotlin <-> NDK)]
+CacheDB[Room DB: Cache and Audit]
+Quarantine[Encrypted Storage]
+end
 
-  subgraph Cloud
-    Proxy[API Proxy / Cache / Rate Limiter]
-    VT[VirusTotal / Reputation API]
-    SH[Shodan / URLhaus]
-    Sandbox[Optional Cloud Sandbox]
-  end
+subgraph Cloud
+Proxy[API Proxy / Cache / Rate Limiter]
+VT[VirusTotal / Reputation API]
+SH[Shodan / URLhaus]
+Sandbox[Optional Cloud Sandbox]
+end
 
-  Watchers -->|File event| Worker
-  UI -->|Start/Stop| Worker
-  Worker --> Engine
-  Engine --> CacheDB
-  Engine --> Quarantine
-  Engine -->|Hash + Metadata| Proxy
-  Proxy --> VT
-  Proxy --> SH
-  SH --> Sandbox
-  Sandbox --> Proxy
-  Proxy --> Engine
-```
+Watchers -->|File event| Worker
+UI -->|Start/Stop| Worker
+Worker --> Engine
+Engine --> CacheDB
+Engine --> Quarantine
+Engine -->|Hash + Metadata| Proxy
+Proxy --> VT
+Proxy --> SH
+SH --> Sandbox
+Sandbox --> Proxy
+Proxy --> Engine
 
 ---
 
