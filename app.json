@@ -117,7 +117,8 @@
           "icon": "./assets/notification-icon.png",
           "color": "#4CAF50"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {
@@ -148,4 +149,4 @@
       "website": "https://pocketshield.com"
     }
   }
-} 
+}

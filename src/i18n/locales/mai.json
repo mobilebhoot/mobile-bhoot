@@ -1,0 +1,53 @@
+{
+  "common": {
+    "ok": "ठीक अछि",
+    "cancel": "रद्द करू",
+    "yes": "हाँ",
+    "no": "नहि",
+    "save": "सुरक्षित करू",
+    "delete": "मिटाऊ",
+    "edit": "संपादन करू",
+    "search": "तकू",
+    "loading": "लोड भ' रहल अछि...",
+    "error": "गलती",
+    "success": "सफलता",
+    "warning": "चेतावनी",
+    "info": "जानकारी"
+  },
+  "navigation": {
+    "dashboard": "सुरक्षा डैशबोर्ड",
+    "vulnerabilities": "कमजोरी सभ",
+    "network": "नेटवर्क ट्राफिक",
+    "linkScanner": "लिंक स्कैनर",
+    "apps": "एप मॉनिटर",
+    "settings": "सेटिंग सभ"
+  },
+  "auth": {
+    "welcome": "PocketShield मे स्वागत अछि",
+    "subtitle": "अहाँक व्यक्तिगत मोबाइल सुरक्षा रक्षक",
+    "login": "लॉगिन",
+    "logout": "लॉगआउट",
+    "signUp": "साइन अप",
+    "forgotPassword": "पासवर्ड बिसरि गेलहुँ?",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "confirmPassword": "पासवर्डक पुष्टि करू"
+  },
+  "dashboard": {
+    "title": "सुरक्षा डैशबोर्ड",
+    "overallRisk": "समग्र जोखिम स्कोर",
+    "securityStatus": "सुरक्षा स्थिति",
+    "threatLevel": "खतराक स्तर",
+    "lastScan": "अंतिम स्कैन",
+    "quickActions": "तुरंत कार्य",
+    "runScan": "सुरक्षा स्कैन चलाऊ",
+    "viewReport": "रिपोर्ट देखू",
+    "low": "कम",
+    "medium": "मध्यम",
+    "high": "उच्च",
+    "critical": "गंभीर",
+    "secure": "सुरक्षित",
+    "vulnerable": "कमजोर",
+    "compromised": "समझौता भेल"
+  }
+}

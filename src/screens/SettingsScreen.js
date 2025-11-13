@@ -9,10 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useSecurity } from '../state/SecurityProvider';
 import { LinearGradient } from 'expo-linear-gradient';
+import LanguageSelector from '../components/LanguageSelector';
 
 export default function SettingsScreen({ navigation }) {
+  const { t } = useTranslation();
   const { settings, updateSettings } = useSecurity();
   const [localSettings, setLocalSettings] = useState(settings);
 
@@ -88,7 +91,7 @@ export default function SettingsScreen({ navigation }) {
         {/* Header */}
         <View style={styles.header}>
           <Ionicons name="settings" size={24} color="#4CAF50" />
-          <Text style={styles.headerTitle}>Settings</Text>
+          <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         </View>
 
         {/* Monitoring Settings */}
@@ -210,12 +213,19 @@ export default function SettingsScreen({ navigation }) {
           </>
         ))}
 
+        {/* App Preferences */}
+        {renderSection('🌐 Language & Region', (
+          <>
+            <LanguageSelector />
+          </>
+        ))}
+
         {/* About */}
-        {renderSection('About', (
+        {renderSection(t('settings.about') || 'About', (
           <>
             {renderSettingItem(
               'information-circle',
-              'App Version',
+              t('settings.version') || 'App Version',
               '1.0.0',
               'info'
             )}
@@ -229,7 +239,7 @@ export default function SettingsScreen({ navigation }) {
             )}
             {renderSettingItem(
               'help-circle',
-              'Help & Support',
+              t('settings.support') || 'Help & Support',
               'Get help and contact support',
               'arrow',
               null,
@@ -237,7 +247,7 @@ export default function SettingsScreen({ navigation }) {
             )}
             {renderSettingItem(
               'star',
-              'Rate App',
+              t('settings.rateApp') || 'Rate App',
               'Rate us on the app store',
               'arrow',
               null,
@@ -362,5 +372,24 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  languageSelectorContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 8,
+    marginVertical: 5,
+  },
+  debugInfo: {
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    borderRadius: 4,
+    marginVertical: 5,
+  },
+  debugText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 }); 

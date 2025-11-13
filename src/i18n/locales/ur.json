@@ -1,0 +1,53 @@
+{
+  "common": {
+    "ok": "ٹھیک ہے",
+    "cancel": "منظور کریں",
+    "yes": "ہاں",
+    "no": "نہیں",
+    "save": "محفوظ کریں",
+    "delete": "حذف کریں",
+    "edit": "ترمیم کریں",
+    "search": "تلاش کریں",
+    "loading": "لوڈ ہو رہا ہے...",
+    "error": "خرابی",
+    "success": "کامیابی",
+    "warning": "خبردار",
+    "info": "معلومات"
+  },
+  "navigation": {
+    "dashboard": "سیکورٹی ڈیش بورڈ",
+    "vulnerabilities": "کمزوریاں",
+    "network": "نیٹ ورک ٹریفک",
+    "linkScanner": "لنک سکینر",
+    "apps": "ایپ مانیٹر",
+    "settings": "سیٹنگز"
+  },
+  "auth": {
+    "welcome": "PocketShield میں خوش آمدید",
+    "subtitle": "آپ کا ذاتی موبائل سیکورٹی گارڈ",
+    "login": "لاگ ان",
+    "logout": "لاگ آؤٹ",
+    "signUp": "سائن اپ",
+    "forgotPassword": "پاس ورڈ بھول گئے؟",
+    "email": "ای میل",
+    "password": "پاس ورڈ",
+    "confirmPassword": "پاس ورڈ کی تصدیق کریں"
+  },
+  "dashboard": {
+    "title": "سیکورٹی ڈیش بورڈ",
+    "overallRisk": "مجموعی خطرہ اسکور",
+    "securityStatus": "سیکورٹی کی صورتحال",
+    "threatLevel": "خطرے کی سطح",
+    "lastScan": "آخری سکین",
+    "quickActions": "فوری عمل",
+    "runScan": "سیکورٹی سکین چلائیں",
+    "viewReport": "رپورٹ دیکھیں",
+    "low": "کم",
+    "medium": "متوسط",
+    "high": "زیادہ",
+    "critical": "اہم",
+    "secure": "محفوظ",
+    "vulnerable": "کمزور",
+    "compromised": "متاثر"
+  }
+}

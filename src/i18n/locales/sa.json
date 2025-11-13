@@ -1,0 +1,53 @@
+{
+  "common": {
+    "ok": "आम्",
+    "cancel": "रद्दनम्",
+    "yes": "आम्",
+    "no": "न",
+    "save": "रक्षणम्",
+    "delete": "अपसारणम्",
+    "edit": "संस्कारणम्",
+    "search": "अन्वेषणम्",
+    "loading": "आरोपणम्...",
+    "error": "त्रुटिः",
+    "success": "सफलता",
+    "warning": "चेतना",
+    "info": "विज्ञापनम्"
+  },
+  "navigation": {
+    "dashboard": "सुरक्षा पटलम्",
+    "vulnerabilities": "दुर्बलताः",
+    "network": "जालक यातायातम्",
+    "linkScanner": "संयोजन परीक्षकम्",
+    "apps": "उपकरण निरीक्षकम्",
+    "settings": "विन्यासाः"
+  },
+  "auth": {
+    "welcome": "PocketShield इत्यत्र स्वागतम्",
+    "subtitle": "भवता व्यक्तिगत चलदूरभाष सुरक्षा रक्षकः",
+    "login": "प्रवेशानुज्ञा",
+    "logout": "निर्गमम्",
+    "signUp": "पंजीकरणम्",
+    "forgotPassword": "गुप्तशब्दम् विस्मृतम्?",
+    "email": "विद्युत्पत्रम्",
+    "password": "गुप्तशब्दः",
+    "confirmPassword": "गुप्तशब्द पुष्टिः"
+  },
+  "dashboard": {
+    "title": "सुरक्षा पटलम्",
+    "overallRisk": "समग्र जोखिम अंकः",
+    "securityStatus": "सुरक्षा स्थितिः",
+    "threatLevel": "भयस्य स्तरम्",
+    "lastScan": "अन्तिम परीक्षा",
+    "quickActions": "त्वरित कार्याणि",
+    "runScan": "सुरक्षा परीक्षा आरभ्यताम्",
+    "viewReport": "प्रतिवेदनम् पश्यतु",
+    "low": "न्यूनम्",
+    "medium": "मध्यमम्",
+    "high": "उच्चम्",
+    "critical": "अत्यावश्यकम्",
+    "secure": "सुरक्षितम्",
+    "vulnerable": "दुर्बलम्",
+    "compromised": "समझ़ौता भवति"
+  }
+}

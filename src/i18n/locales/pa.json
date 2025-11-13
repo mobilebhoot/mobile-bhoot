@@ -1,0 +1,53 @@
+{
+  "common": {
+    "ok": "ਠੀਕ ਹੈ",
+    "cancel": "ਰੱਦ ਕਰੋ",
+    "yes": "ਹਾਂ",
+    "no": "ਨਹੀਂ",
+    "save": "ਸੇਵ ਕਰੋ",
+    "delete": "ਮਿਟਾਓ",
+    "edit": "ਸੋਧ",
+    "search": "ਖੋਜ",
+    "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...",
+    "error": "ਗਲਤੀ",
+    "success": "ਸਫਲਤਾ",
+    "warning": "ਚੇਤਾਵਨੀ",
+    "info": "ਜਾਣਕਾਰੀ"
+  },
+  "navigation": {
+    "dashboard": "ਸੁਰੱਖਿਆ ਡੈਸ਼ਬੋਰਡ",
+    "vulnerabilities": "ਕਮਜ਼ੋਰੀਆਂ",
+    "network": "ਨੈੱਟਵਰਕ ਟਰੈਫਿਕ",
+    "linkScanner": "ਲਿੰਕ ਸਕੈਨਰ",
+    "apps": "ਐਪ ਮਾਨੀਟਰ",
+    "settings": "ਸੈਟਿੰਗਾਂ"
+  },
+  "auth": {
+    "welcome": "PocketShield ਵਿੱਚ ਸਵਾਗਤ ਹੈ",
+    "subtitle": "ਤੁਹਾਡਾ ਨਿੱਜੀ ਮੋਬਾਈਲ ਸੁਰੱਖਿਆ ਰੱਖਿਅਕ",
+    "login": "ਲਾਗਇਨ",
+    "logout": "ਲਾਗਆਉਟ",
+    "signUp": "ਸਾਈਨ ਅੱਪ",
+    "forgotPassword": "ਪਾਸਵਰਡ ਭੁੱਲ ਗਏ?",
+    "email": "ਈਮੇਲ",
+    "password": "ਪਾਸਵਰਡ",
+    "confirmPassword": "ਪਾਸਵਰਡ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ"
+  },
+  "dashboard": {
+    "title": "ਸੁਰੱਖਿਆ ਡੈਸ਼ਬੋਰਡ",
+    "overallRisk": "ਸਮੁੱਚਾ ਖਤਰਾ ਸਕੋਰ",
+    "securityStatus": "ਸੁਰੱਖਿਆ ਸਥਿਤੀ",
+    "threatLevel": "ਖਤਰੇ ਦਾ ਪੱਧਰ",
+    "lastScan": "ਪਿਛਲਾ ਸਕੈਨ",
+    "quickActions": "ਤੇਜ਼ ਕਰਵਾਈਆਂ",
+    "runScan": "ਸੁਰੱਖਿਆ ਸਕੈਨ ਚਲਾਓ",
+    "viewReport": "ਰਿਪੋਰਟ ਵੇਖੋ",
+    "low": "ਘੱਟ",
+    "medium": "ਮੱਧਮ",
+    "high": "ਉੱਚ",
+    "critical": "ਗੰਭੀਰ",
+    "secure": "ਸੁਰੱਖਿਤ",
+    "vulnerable": "ਕਮਜ਼ੋਰ",
+    "compromised": "ਸਮਝੌਤਾ ਹੋਇਆ"
+  }
+}

@@ -1,242 +1,332 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
-  Modal,
+  Dimensions,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSecurity } from '../state/SecurityProvider';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { LineChart, BarChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
+import { useTranslation } from 'react-i18next';
+import networkMonitoringService from '../services/networkMonitoringService';
+import realAppMonitorService from '../services/realAppMonitorService';
 
-const screenWidth = Dimensions.get('window').width;
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const chartWidth = screenWidth - 32;
 
-export default function NetworkTrafficScreen() {
-  const { securityState, networkAnalysis, aiAnalysis } = useSecurity();
-  const [selectedConnection, setSelectedConnection] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [filter, setFilter] = useState('all');
+export default function NetworkTrafficScreen({ navigation }) {
+  const { t } = useTranslation();
+  const [networkStats, setNetworkStats] = useState(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState(null);
+  const [historicalData, setHistoricalData] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState('hourly');
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [realAppData, setRealAppData] = useState(null);
+  const [installedApps, setInstalledApps] = useState([]);
 
-  // Extract networkConnections from securityState with null safety
-  const networkConnections = securityState?.networkConnections ?? [];
+  // Load network data on component mount
+  useEffect(() => {
+    initializeNetworkMonitoring();
+    return () => {
+      networkMonitoringService.stopMonitoring();
+    };
+  }, []);
 
-  const getConnectionStatusColor = (status) => {
-    switch (status) {
-      case 'secure': return '#4CAF50';
-      case 'warning': return '#FF9800';
-      case 'dangerous': return '#F44336';
-      default: return '#757575';
+  // Real-time data updates
+  useEffect(() => {
+    if (isMonitoring) {
+      const interval = setInterval(() => {
+        updateNetworkData();
+        updateRealAppData();
+      }, 5000); // Update every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [isMonitoring]);
+
+  const initializeNetworkMonitoring = async () => {
+    setIsLoading(true);
+    try {
+      // Initialize real app monitor
+      await realAppMonitorService.initialize();
+      realAppMonitorService.startMonitoring();
+      
+      // Initialize network monitoring
+      await networkMonitoringService.startMonitoring();
+      setIsMonitoring(true);
+      
+      // Update all data
+      updateNetworkData();
+      updateRealAppData();
+    } catch (error) {
+      console.error('Failed to initialize network monitoring:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getConnectionStatusIcon = (status) => {
-    switch (status) {
-      case 'secure': return 'shield-checkmark';
-      case 'warning': return 'warning';
-      case 'dangerous': return 'alert-circle';
-      default: return 'help-circle';
-    }
-  };
-
-  const filteredConnections = (networkConnections ?? []).filter(conn => {
-    if (filter === 'all') return true;
-    return conn.status === filter;
-  });
-
-  const renderConnectionDetails = () => {
-    if (!selectedConnection) return null;
-
-    const { details } = selectedConnection;
+  const updateNetworkData = () => {
+    const stats = networkMonitoringService.getCurrentStats();
+    const metrics = networkMonitoringService.getPerformanceMetrics();
+    const historical = networkMonitoringService.getHistoricalData(selectedPeriod);
     
-    return (
-      <Modal
-        visible={showDetails}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowDetails(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Connection Details</Text>
-              <TouchableOpacity onPress={() => setShowDetails(false)}>
-                <Ionicons name="close" size={24} color="#fff" />
+    setNetworkStats(stats);
+    setPerformanceMetrics(metrics);
+    setHistoricalData(historical);
+  };
+
+  const updateRealAppData = () => {
+    const appData = realAppMonitorService.getNetworkStats();
+    const apps = realAppMonitorService.getInstalledApps();
+    
+    setRealAppData(appData);
+    setInstalledApps(apps);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    networkMonitoringService.resetData();
+    updateNetworkData();
+    updateRealAppData();
+    setRefreshing(false);
+  };
+
+  const toggleMonitoring = () => {
+    if (isMonitoring) {
+      networkMonitoringService.stopMonitoring();
+      realAppMonitorService.stopMonitoring();
+      setIsMonitoring(false);
+    } else {
+      networkMonitoringService.startMonitoring();
+      realAppMonitorService.startMonitoring();
+      setIsMonitoring(true);
+    }
+  };
+
+  // Chart configurations
+  const chartConfig = {
+    backgroundColor: '#1a1a2e',
+    backgroundGradientFrom: '#1a1a2e',
+    backgroundGradientTo: '#16213e',
+    decimalPlaces: 1,
+    color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+    style: { borderRadius: 16 },
+    propsForDots: {
+      r: '4',
+      strokeWidth: '2',
+      stroke: '#4CAF50'
+    }
+  };
+
+  // Format data for line chart
+  const formatLineChartData = () => {
+    if (!historicalData.length) return null;
+
+    return {
+      labels: historicalData.map(item => 
+        selectedPeriod === 'hourly' ? item.label : item.date.split(' ')[0]
+      ),
+      datasets: [
+        {
+          data: historicalData.map(item => (item.download + item.upload) / 1024), // Convert to MB
+          color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+          strokeWidth: 2
+        }
+      ]
+    };
+  };
+
+  // Helper function to format bytes
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
+
+  // Format data for app usage pie chart
+  const formatPieChartData = () => {
+    if (!realAppData?.topApps || realAppData.topApps.length === 0) return [];
+
+    const colors = [
+      '#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0',
+      '#607D8B', '#795548', '#E91E63', '#00BCD4', '#8BC34A'
+    ];
+
+    const totalUsage = realAppData.totalBandwidth.total;
+    
+    return realAppData.topApps.slice(0, 5).map((app, index) => ({
+      name: app.name,
+      population: totalUsage > 0 ? Math.round((app.dataUsage.total / totalUsage) * 100) : 0,
+      color: colors[index % colors.length],
+      legendFontColor: '#ffffff',
+      legendFontSize: 12
+    }));
+  };
+
+  // Format data for app usage bar chart
+  const formatBarChartData = () => {
+    if (!realAppData?.topApps || realAppData.topApps.length === 0) return null;
+
+    const topApps = realAppData.topApps.slice(0, 6);
+    return {
+      labels: topApps.map(app => app.name.substring(0, 8)),
+      datasets: [{
+        data: topApps.map(app => app.dataUsage.total) // Data already in KB
+      }]
+    };
+  };
+
+  // Real-time status indicator
+  const StatusIndicator = () => (
+    <View style={styles.statusContainer}>
+      <View style={[styles.statusDot, { backgroundColor: isMonitoring ? '#4CAF50' : '#F44336' }]} />
+      <Text style={styles.statusText}>
+        {isMonitoring ? 'Live Monitoring' : 'Monitoring Stopped'}
+      </Text>
+      <TouchableOpacity onPress={toggleMonitoring} style={styles.toggleButton}>
+        <Ionicons 
+          name={isMonitoring ? 'pause' : 'play'} 
+          size={16} 
+          color="#fff" 
+        />
               </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>Connection Info</Text>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>App:</Text>
-                  <Text style={styles.detailValue}>{selectedConnection.app}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Destination:</Text>
-                  <Text style={styles.detailValue}>{selectedConnection.destination}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Protocol:</Text>
-                  <Text style={styles.detailValue}>{selectedConnection.protocol}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Data Transferred:</Text>
-                  <Text style={styles.detailValue}>{selectedConnection.dataTransferred}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Duration:</Text>
-                  <Text style={styles.detailValue}>{selectedConnection.duration}</Text>
-                </View>
-              </View>
+  );
 
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>Security Analysis</Text>
-                <View style={styles.securityScore}>
-                  <Text style={styles.scoreLabel}>Security Score:</Text>
-                  <Text style={[styles.scoreValue, { color: details.securityScore > 70 ? '#4CAF50' : details.securityScore > 40 ? '#FF9800' : '#F44336' }]}>
-                    {details.securityScore}/100
+  // Header with controls
+  const DashboardHeader = () => (
+    <View style={styles.header}>
+      <View>
+        <Text style={styles.headerTitle}>Network Dashboard</Text>
+        <Text style={styles.headerSubtitle}>Real-time bandwidth monitoring</Text>
+                </View>
+      <StatusIndicator />
+                </View>
+  );
+
+  // Performance metrics cards
+  const MetricsCards = () => {
+    if (!performanceMetrics) return null;
+
+    return (
+      <View style={styles.metricsContainer}>
+        <View style={styles.metricCard}>
+          <LinearGradient colors={['#4CAF50', '#45a049']} style={styles.metricGradient}>
+            <Ionicons name="download" size={24} color="#fff" />
+            <Text style={styles.metricValue}>
+              {networkMonitoringService.formatBytes(performanceMetrics.downloadSpeed)}
                   </Text>
-                </View>
-                <Text style={styles.aiAnalysis}>{details.aiAnalysis}</Text>
+            <Text style={styles.metricLabel}>Download</Text>
+          </LinearGradient>
               </View>
 
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>Request Headers</Text>
-                {Object.entries(details.requestHeaders).map(([key, value]) => (
-                  <View key={key} style={styles.headerRow}>
-                    <Text style={styles.headerKey}>{key}:</Text>
-                    <Text style={styles.headerValue}>{value}</Text>
-                  </View>
-                ))}
+        <View style={styles.metricCard}>
+          <LinearGradient colors={['#2196F3', '#1976D2']} style={styles.metricGradient}>
+            <Ionicons name="cloud-upload" size={24} color="#fff" />
+            <Text style={styles.metricValue}>
+              {networkMonitoringService.formatBytes(performanceMetrics.uploadSpeed)}
+            </Text>
+            <Text style={styles.metricLabel}>Upload</Text>
+          </LinearGradient>
               </View>
 
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>Response Headers</Text>
-                {Object.entries(details.responseHeaders).map(([key, value]) => (
-                  <View key={key} style={styles.headerRow}>
-                    <Text style={styles.headerKey}>{key}:</Text>
-                    <Text style={styles.headerValue}>{value}</Text>
-                  </View>
-                ))}
+        <View style={styles.metricCard}>
+          <LinearGradient colors={['#FF9800', '#F57C00']} style={styles.metricGradient}>
+            <Ionicons name="analytics" size={24} color="#fff" />
+            <Text style={styles.metricValue}>
+              {networkMonitoringService.formatBytes(performanceMetrics.totalUsage)}
+            </Text>
+            <Text style={styles.metricLabel}>Total Usage</Text>
+          </LinearGradient>
               </View>
 
-              <View style={styles.detailSection}>
-                <Text style={styles.sectionTitle}>AI Recommendations</Text>
-                <View style={styles.recommendationContainer}>
-                  <Ionicons name="bulb" size={20} color="#4CAF50" />
-                  <Text style={styles.recommendationText}>
-                    {selectedConnection.status === 'dangerous' 
-                      ? 'Block this connection immediately. It poses a high security risk.'
-                      : selectedConnection.status === 'warning'
-                      ? 'Monitor this connection closely and review app permissions.'
-                      : 'This connection appears secure. Continue monitoring for changes.'}
+        <View style={styles.metricCard}>
+          <LinearGradient colors={['#9C27B0', '#7B1FA2']} style={styles.metricGradient}>
+            <Ionicons name="speedometer" size={24} color="#fff" />
+            <Text style={styles.metricValue}>
+              {Math.round(performanceMetrics.efficiency)}%
                   </Text>
-                </View>
-              </View>
-            </ScrollView>
-          </View>
+            <Text style={styles.metricLabel}>Efficiency</Text>
+          </LinearGradient>
         </View>
-      </Modal>
+      </View>
     );
   };
 
-  const renderConnectionCard = (connection) => (
+  // Time period selector
+  const PeriodSelector = () => (
+    <View style={styles.periodSelector}>
+      {['hourly', 'daily', 'realtime'].map(period => (
     <TouchableOpacity
-      key={connection.id}
-      style={styles.connectionCard}
+          key={period}
+          style={[
+            styles.periodButton,
+            selectedPeriod === period && styles.periodButtonActive
+          ]}
       onPress={() => {
-        setSelectedConnection(connection);
-        setShowDetails(true);
-      }}
-    >
-      <View style={styles.connectionHeader}>
-        <View style={styles.connectionInfo}>
-          <Text style={styles.appName}>{connection.app}</Text>
-          <Text style={styles.destination}>{connection.destination}</Text>
-        </View>
-        <View style={styles.statusContainer}>
-          <Ionicons 
-            name={getConnectionStatusIcon(connection.status)} 
-            size={20} 
-            color={getConnectionStatusColor(connection.status)} 
-          />
-          <Text style={[styles.statusText, { color: getConnectionStatusColor(connection.status) }]}>
-            {connection.status.toUpperCase()}
+            setSelectedPeriod(period);
+            const historical = networkMonitoringService.getHistoricalData(period);
+            setHistoricalData(historical);
+          }}
+        >
+          <Text style={[
+            styles.periodButtonText,
+            selectedPeriod === period && styles.periodButtonTextActive
+          ]}>
+            {period.charAt(0).toUpperCase() + period.slice(1)}
           </Text>
+        </TouchableOpacity>
+      ))}
         </View>
-      </View>
-      
-      <View style={styles.connectionDetails}>
-        <View style={styles.detailItem}>
-          <Ionicons name="globe" size={16} color="#888" />
-          <Text style={styles.detailText}>{connection.protocol}</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Ionicons name="download" size={16} color="#888" />
-          <Text style={styles.detailText}>{connection.dataTransferred}</Text>
-        </View>
-        <View style={styles.detailItem}>
-          <Ionicons name="time" size={16} color="#888" />
-          <Text style={styles.detailText}>{connection.duration}</Text>
-        </View>
-      </View>
-
-      <View style={styles.securityIndicator}>
-        <Text style={styles.securityScoreText}>
-          Security: {connection.details.securityScore}/100
-        </Text>
-        <View style={[styles.scoreBar, { backgroundColor: '#333' }]}>
-          <View 
-            style={[
-              styles.scoreFill, 
-              { 
-                width: `${connection.details.securityScore}%`,
-                backgroundColor: connection.details.securityScore > 70 ? '#4CAF50' : 
-                               connection.details.securityScore > 40 ? '#FF9800' : '#F44336'
-              }
-            ]} 
-          />
-        </View>
-      </View>
-    </TouchableOpacity>
   );
 
-  const renderNetworkChart = () => {
-    const chartData = {
-      labels: ['Secure', 'Warning', 'Dangerous'],
-      datasets: [{
-        data: [
-          (networkConnections ?? []).filter(c => c.status === 'secure').length,
-          (networkConnections ?? []).filter(c => c.status === 'warning').length,
-          (networkConnections ?? []).filter(c => c.status === 'dangerous').length,
-        ],
-      }]
-    };
+  // Bandwidth usage chart
+  const BandwidthChart = () => {
+    const lineData = formatLineChartData();
+    if (!lineData) return null;
 
     return (
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Network Traffic Distribution</Text>
-        <BarChart
-          data={chartData}
-          width={screenWidth - 40}
+        <Text style={styles.chartTitle}>Bandwidth Usage Over Time</Text>
+        <PeriodSelector />
+        <LineChart
+          data={lineData}
+          width={chartWidth}
           height={200}
-          yAxisSuffix=""
+          chartConfig={chartConfig}
+          bezier
+          style={styles.chart}
+        />
+      </View>
+    );
+  };
+
+  // App usage breakdown
+  const AppUsageChart = () => {
+    const barData = formatBarChartData();
+    if (!barData) return null;
+
+    return (
+      <View style={styles.chartContainer}>
+        <Text style={styles.chartTitle}>Top Apps by Data Usage</Text>
+        <BarChart
+          data={barData}
+          width={chartWidth}
+          height={200}
           chartConfig={{
-            backgroundColor: '#2a2a3e',
-            backgroundGradientFrom: '#2a2a3e',
-            backgroundGradientTo: '#2a2a3e',
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-            style: {
-              borderRadius: 16,
-            },
-            barPercentage: 0.7,
+            ...chartConfig,
+            color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
           }}
           style={styles.chart}
         />
@@ -244,411 +334,350 @@ export default function NetworkTrafficScreen() {
     );
   };
 
-  const renderAIInsights = () => {
-    if (!aiAnalysis.recommendations) return null;
+  // App usage pie chart
+  const AppUsagePieChart = () => {
+    const pieData = formatPieChartData();
+    if (!pieData.length) return null;
 
     return (
-      <View style={styles.aiInsightsContainer}>
-        <Text style={styles.aiInsightsTitle}>AI Security Insights</Text>
-        {aiAnalysis.recommendations
-          .filter(rec => rec?.title?.toLowerCase()?.includes('network') ?? false)
-          .map((recommendation, index) => (
-            <View key={index} style={styles.recommendationCard}>
-              <View style={styles.recommendationHeader}>
-                <Ionicons name="shield-checkmark" size={20} color="#4CAF50" />
-                <Text style={styles.recommendationTitle}>{recommendation.title}</Text>
-              </View>
-              <Text style={styles.recommendationDescription}>{recommendation.description}</Text>
-              <View style={styles.recommendationMeta}>
-                <Text style={styles.priorityText}>Priority: {recommendation.priority}</Text>
-                <Text style={styles.confidenceText}>AI Confidence: {recommendation.aiConfidence}%</Text>
-              </View>
-            </View>
-          ))}
+      <View style={styles.chartContainer}>
+        <Text style={styles.chartTitle}>App Usage Distribution</Text>
+        <PieChart
+          data={pieData}
+          width={chartWidth}
+          height={220}
+          chartConfig={chartConfig}
+          accessor="population"
+          backgroundColor="transparent"
+          paddingLeft="15"
+          center={[10, 10]}
+          style={styles.chart}
+        />
       </View>
     );
   };
 
+  // Real app usage list
+  const AppUsageList = () => {
+    if (!realAppData?.topApps || realAppData.topApps.length === 0) {
   return (
-    <LinearGradient colors={['#1a1a2e', '#16213e', '#0f3460']} style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Ionicons name="globe" size={24} color="#4CAF50" />
-            <Text style={styles.headerTitle}>Network Traffic</Text>
-          </View>
-          <TouchableOpacity style={styles.monitoringToggle}>
-            <Ionicons name="eye" size={20} color="#4CAF50" />
-            <Text style={styles.toggleText}>Monitoring</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Summary Cards */}
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
-            <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
-            <Text style={styles.summaryNumber}>
-              {(networkConnections ?? []).filter(c => c.status === 'secure').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Secure</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Ionicons name="warning" size={24} color="#FF9800" />
-            <Text style={styles.summaryNumber}>
-              {(networkConnections ?? []).filter(c => c.status === 'warning').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Warning</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Ionicons name="alert-circle" size={24} color="#F44336" />
-            <Text style={styles.summaryNumber}>
-              {(networkConnections ?? []).filter(c => c.status === 'dangerous').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Dangerous</Text>
+        <View style={styles.appListContainer}>
+          <Text style={styles.chartTitle}>📱 Installed Apps Usage</Text>
+          <View style={styles.noDataContainer}>
+            <Ionicons name="apps-outline" size={48} color="#888" />
+            <Text style={styles.noDataText}>Detecting installed apps...</Text>
           </View>
         </View>
+      );
+    }
 
-        {/* Filter Buttons */}
-        <View style={styles.filterContainer}>
-          {['all', 'secure', 'warning', 'dangerous'].map((filterType) => (
-            <TouchableOpacity
-              key={filterType}
-              style={[styles.filterButton, filter === filterType && styles.filterButtonActive]}
-              onPress={() => setFilter(filterType)}
-            >
-              <Text style={[styles.filterText, filter === filterType && styles.filterTextActive]}>
-                {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+    const totalUsage = realAppData.totalBandwidth.total;
+
+    return (
+      <View style={styles.appListContainer}>
+        <Text style={styles.chartTitle}>📱 Installed Apps Usage</Text>
+        <Text style={styles.subTitle}>
+          {installedApps.length} apps detected • Total: {formatBytes(totalUsage)}
+            </Text>
+        {realAppData.topApps.map((app, index) => (
+          <View key={app.packageName} style={styles.appItem}>
+            <View style={styles.appInfo}>
+              <View style={[styles.appRank, { backgroundColor: getAppColor(index) }]}>
+                <Text style={styles.appRankText}>{app.icon}</Text>
+          </View>
+              <View style={styles.appDetails}>
+                <Text style={styles.appName}>{app.name}</Text>
+                <View style={styles.appStats}>
+                  <Text style={styles.appStatsText}>
+                    ↓ {formatBytes(app.dataUsage.download * 1024)}
+                  </Text>
+                  <Text style={styles.appStatsText}>
+                    ↑ {formatBytes(app.dataUsage.upload * 1024)}
+                  </Text>
+                  <Text style={styles.appStatsText}>
+                    📱 {Math.round(app.screenTime)}m
+            </Text>
+          </View>
+          </View>
+        </View>
+            <View style={styles.appUsage}>
+              <Text style={styles.appTotal}>
+                {formatBytes(app.dataUsage.total * 1024)}
+              </Text>
+              <Text style={styles.appPercentage}>
+                {totalUsage > 0 ? ((app.dataUsage.total / totalUsage) * 100).toFixed(1) : 0}%
+              </Text>
+            </View>
+          </View>
+        ))}
+        
+        {installedApps.length > realAppData.topApps.length && (
+          <TouchableOpacity style={styles.showMoreButton}>
+            <Text style={styles.showMoreText}>
+              Show all {installedApps.length} apps →
               </Text>
             </TouchableOpacity>
-          ))}
+        )}
         </View>
+    );
+  };
 
-        {/* Network Chart */}
-        {renderNetworkChart()}
+  const getAppColor = (index) => {
+    const colors = ['#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0'];
+    return colors[index % colors.length];
+  };
 
-        {/* AI Insights */}
-        {renderAIInsights()}
-
-        {/* Connections List */}
-        <View style={styles.connectionsContainer}>
-          <Text style={styles.sectionTitle}>Active Connections ({filteredConnections.length})</Text>
-          {filteredConnections.map(renderConnectionCard)}
+  if (isLoading) {
+  return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Initializing Network Monitor...</Text>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#4CAF50']}
+            tintColor="#4CAF50"
+          />
+        }
+      >
+        <DashboardHeader />
+        <MetricsCards />
+        <BandwidthChart />
+        <AppUsageChart />
+        <AppUsagePieChart />
+        <AppUsageList />
       </ScrollView>
-
-      {/* Connection Details Modal */}
-      {renderConnectionDetails()}
-    </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginLeft: 10,
-  },
-  monitoringToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  toggleText: {
-    color: '#4CAF50',
-    fontSize: 12,
-    marginLeft: 5,
-  },
-  summaryContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  summaryCard: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 15,
-    borderRadius: 12,
-    minWidth: 80,
-  },
-  summaryNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-    marginTop: 5,
   },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#ccc',
-    marginTop: 5,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  filterButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  filterButtonActive: {
-    backgroundColor: '#4CAF50',
-  },
-  filterText: {
-    color: '#ccc',
+  headerSubtitle: {
     fontSize: 14,
+    color: '#888',
+    marginTop: 4,
   },
-  filterTextActive: {
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a2e',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  statusText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  chartContainer: {
-    marginHorizontal: 20,
+  toggleButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  metricsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
     marginBottom: 20,
   },
-  chartTitle: {
+  metricCard: {
+    flex: 1,
+    marginHorizontal: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  metricGradient: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  metricValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 10,
+    marginTop: 8,
+  },
+  metricLabel: {
+    fontSize: 12,
+    color: '#fff',
+    marginTop: 4,
+    opacity: 0.9,
+  },
+  chartContainer: {
+    backgroundColor: '#1a1a2e',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 16,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 16,
   },
   chart: {
     marginVertical: 8,
     borderRadius: 16,
   },
-  aiInsightsContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  aiInsightsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
-  recommendationCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  recommendationHeader: {
+  periodSelector: {
     flexDirection: 'row',
+    marginBottom: 16,
+    backgroundColor: '#16213e',
+    borderRadius: 8,
+    padding: 4,
+  },
+  periodButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     alignItems: 'center',
-    marginBottom: 8,
+    borderRadius: 6,
   },
-  recommendationTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginLeft: 8,
+  periodButtonActive: {
+    backgroundColor: '#4CAF50',
   },
-  recommendationDescription: {
-    fontSize: 12,
-    color: '#ccc',
-    lineHeight: 18,
-  },
-  recommendationMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  priorityText: {
-    fontSize: 11,
+  periodButtonText: {
     color: '#888',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  confidenceText: {
-    fontSize: 11,
-    color: '#4CAF50',
-  },
-  connectionsContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  periodButtonTextActive: {
     color: '#fff',
-    marginBottom: 15,
   },
-  connectionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
+  appListContainer: {
+    backgroundColor: '#1a1a2e',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 16,
   },
-  connectionHeader: {
+  appItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
-  connectionInfo: {
+  appInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  appRank: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  appRankText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  appDetails: {
     flex: 1,
   },
   appName: {
-    fontSize: 16,
-    fontWeight: 'bold',
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
-  destination: {
+  appStats: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  appStatsText: {
+    color: '#888',
     fontSize: 12,
-    color: '#ccc',
+    marginRight: 16,
+  },
+  appUsage: {
+    alignItems: 'flex-end',
+  },
+  appTotal: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  appPercentage: {
+    color: '#4CAF50',
+    fontSize: 12,
     marginTop: 2,
   },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginLeft: 5,
-  },
-  connectionDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailText: {
-    fontSize: 12,
-    color: '#ccc',
-    marginLeft: 5,
-  },
-  securityIndicator: {
-    marginTop: 10,
-  },
-  securityScoreText: {
-    fontSize: 12,
-    color: '#ccc',
-    marginBottom: 5,
-  },
-  scoreBar: {
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  scoreFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#2a2a3e',
-    borderRadius: 20,
-    width: '90%',
-    maxHeight: '80%',
-    padding: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  modalBody: {
-    flex: 1,
-  },
-  detailSection: {
-    marginBottom: 20,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#ccc',
-    fontWeight: '500',
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  securityScore: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  scoreLabel: {
-    fontSize: 14,
-    color: '#ccc',
-  },
-  scoreValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  aiAnalysis: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontStyle: 'italic',
-    lineHeight: 18,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    marginBottom: 5,
-  },
-  headerKey: {
-    fontSize: 12,
+  subTitle: {
     color: '#888',
-    width: '40%',
+    fontSize: 14,
+    marginBottom: 15,
+    textAlign: 'center',
   },
-  headerValue: {
-    fontSize: 12,
-    color: '#ccc',
-    flex: 1,
+  noDataContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
   },
-  recommendationContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  noDataText: {
+    color: '#888',
+    fontSize: 16,
     marginTop: 10,
   },
-  recommendationText: {
-    fontSize: 12,
+  showMoreButton: {
+    marginTop: 15,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 8,
+  },
+  showMoreText: {
     color: '#4CAF50',
-    marginLeft: 8,
-    flex: 1,
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: '500',
   },
 }); 

@@ -1,0 +1,53 @@
+{
+  "common": {
+    "ok": "ঠিক আছে",
+    "cancel": "বাতিল কৰক",
+    "yes": "হয়",
+    "no": "নাই",
+    "save": "সংৰক্ষণ কৰক",
+    "delete": "মচক",
+    "edit": "সম্পাদনা",
+    "search": "বিচাৰক",
+    "loading": "লোড হৈ আছে...",
+    "error": "ভুল",
+    "success": "সফলতা",
+    "warning": "সতৰ্কবাণী",
+    "info": "তথ্য"
+  },
+  "navigation": {
+    "dashboard": "নিৰাপত্তা ডেচবোৰ্ড",
+    "vulnerabilities": "দুৰ্বলতা",
+    "network": "নেটৱৰ্ক ট্ৰেফিক",
+    "linkScanner": "লিংক স্কেনাৰ",
+    "apps": "এপ মনিটৰ",
+    "settings": "ছেটিংছ"
+  },
+  "auth": {
+    "welcome": "PocketShield লৈ আদৰণি",
+    "subtitle": "আপোনাৰ ব্যক্তিগত মোবাইল নিৰাপত্তা ৰক্ষক",
+    "login": "লগইন",
+    "logout": "লগআউট",
+    "signUp": "ছাইন আপ",
+    "forgotPassword": "পাছৱৰ্ড পাহৰিলে?",
+    "email": "ইমেইল",
+    "password": "পাছৱৰ্ড",
+    "confirmPassword": "পাছৱৰ্ড নিশ্চিত কৰক"
+  },
+  "dashboard": {
+    "title": "নিৰাপত্তা ডেচবোৰ্ড",
+    "overallRisk": "সামগ্ৰিক বিপদ স্কোৰ",
+    "securityStatus": "নিৰাপত্তাৰ অৱস্থা",
+    "threatLevel": "ভাবুকিৰ স্তৰ",
+    "lastScan": "শেষ স্কেন",
+    "quickActions": "দ্ৰুত কাৰ্য",
+    "runScan": "নিৰাপত্তা স্কেন চলাওক",
+    "viewReport": "প্ৰতিবেদন চাওক",
+    "low": "কম",
+    "medium": "মধ্যম",
+    "high": "উচ্চ",
+    "critical": "গুৰুতৰ",
+    "secure": "নিৰাপদ",
+    "vulnerable": "দুৰ্বল",
+    "compromised": "আপোচ"
+  }
+}

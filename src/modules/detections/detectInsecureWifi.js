@@ -1,7 +1,8 @@
 // Insecure WiFi detection module for Android
 
 import { Platform } from 'react-native';
-import NetInfo from '@react-native-community/netinfo';
+// Temporarily disabled NetInfo to prevent crashes
+// import NetInfo from '@react-native-community/netinfo';
 
 export const detectInsecureWifi = async () => {
   const results = {
@@ -10,6 +11,14 @@ export const detectInsecureWifi = async () => {
     deviceHealth: {},
   };
 
+  // Temporarily disable network detection to prevent crashes
+  // TODO: Fix NetInfo integration in future version
+  console.log('WiFi detection temporarily disabled for compatibility');
+  
+  return results;
+
+  /*
+  // Original NetInfo-based implementation (temporarily disabled)
   if (Platform.OS !== 'android') {
     return results;
   }
@@ -77,4 +86,5 @@ export const detectInsecureWifi = async () => {
   }
 
   return results;
+  */
 }; 

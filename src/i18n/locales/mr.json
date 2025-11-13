@@ -1,0 +1,53 @@
+{
+  "common": {
+    "ok": "ठीक आहे",
+    "cancel": "रद्द करा",
+    "yes": "होय",
+    "no": "नाही",
+    "save": "जतन करा",
+    "delete": "हटवा",
+    "edit": "संपादित करा",
+    "search": "शोधा",
+    "loading": "लोड होत आहे...",
+    "error": "त्रुटी",
+    "success": "यश",
+    "warning": "चेतावणी",
+    "info": "माहिती"
+  },
+  "navigation": {
+    "dashboard": "सुरक्षा डॅशबोर्ड",
+    "vulnerabilities": "कमकुवतपणा",
+    "network": "नेटवर्क ट्राफिक",
+    "linkScanner": "लिंक स्कॅनर",
+    "apps": "अॅप मॉनिटर",
+    "settings": "सेटिंग्स"
+  },
+  "auth": {
+    "welcome": "पॉकेटशील्डमध्ये आपले स्वागत आहे",
+    "subtitle": "तुमचा वैयक्तिक मोबाइल सुरक्षा रक्षक",
+    "login": "लॉगिन",
+    "logout": "लॉगआउट",
+    "signUp": "साइन अप",
+    "forgotPassword": "पासवर्ड विसरला?",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "confirmPassword": "पासवर्डची पुष्टी करा"
+  },
+  "dashboard": {
+    "title": "सुरक्षा डॅशबोर्ड",
+    "overallRisk": "एकूण जोखीम गुण",
+    "securityStatus": "सुरक्षा स्थिती",
+    "threatLevel": "धोक्याची पातळी",
+    "lastScan": "शेवटचे स्कॅन",
+    "quickActions": "त्वरित कृती",
+    "runScan": "सुरक्षा स्कॅन चालवा",
+    "viewReport": "अहवाल पहा",
+    "low": "कम",
+    "medium": "मध्यम",
+    "high": "उच्च",
+    "critical": "गंभीर",
+    "secure": "सुरक्षित",
+    "vulnerable": "असुरक्षित",
+    "compromised": "तडजोड केलेला"
+  }
+}

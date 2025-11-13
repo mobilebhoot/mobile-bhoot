@@ -13,21 +13,57 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LineChart, PieChart, BarChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useSecurity } from '../state/SecurityProvider';
 import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen({ navigation }) {
+  const { t } = useTranslation();
   const { securityState, performSecurityScan } = useSecurity();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Add null safety check
+  // Add null safety check and initialization status
   if (!securityState) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Initializing Security Dashboard...</Text>
+          <Ionicons name="shield-outline" size={64} color="#4CAF50" />
+          <Text style={styles.loadingText}>{t('dashboard.initializing')}</Text>
+          <Text style={styles.loadingSubText}>{t('dashboard.settingUp')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show initialization error if services failed to start
+  if (securityState.initializationError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="warning" size={64} color="#F44336" />
+          <Text style={styles.errorText}>{t('dashboard.initializationFailed')}</Text>
+          <Text style={styles.errorSubText}>{securityState.initializationError}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={onRefresh}
+          >
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show initial loading if services are not initialized
+  if (!securityState.servicesInitialized) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="settings" size={64} color="#4CAF50" />
+          <Text style={styles.loadingText}>Starting Security Services...</Text>
+          <Text style={styles.loadingSubText}>This may take a few moments</Text>
         </View>
       </SafeAreaView>
     );
@@ -39,8 +75,8 @@ export default function DashboardScreen({ navigation }) {
     setRefreshing(false);
     Toast.show({
       type: 'success',
-      text1: 'Security Scan Complete',
-      text2: 'Your device has been scanned for vulnerabilities',
+      text1: t('dashboard.scanComplete'),
+      text2: t('dashboard.scanCompleteMessage'),
     });
   };
 
@@ -51,9 +87,9 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const getSecurityStatus = (score) => {
-    if (score >= 80) return 'Secure';
-    if (score >= 60) return 'Moderate';
-    return 'At Risk';
+    if (score >= 80) return t('dashboard.statusSecure');
+    if (score >= 60) return t('dashboard.statusModerate');
+    return t('dashboard.statusAtRisk');
   };
 
   const chartConfig = {
@@ -73,41 +109,51 @@ export default function DashboardScreen({ navigation }) {
     },
   };
 
+  // App Security Distribution (based on real scan data)
   const pieChartData = [
     {
-      name: 'Secure',
-      population: (securityState?.vulnerabilities ?? []).filter(v => v.severity === 'low').length,
+      name: t('dashboard.lowRisk'),
+      population: securityState?.appAnalysis?.lowRiskApps ?? 0,
       color: '#4CAF50',
       legendFontColor: '#FFFFFF',
       legendFontSize: 12,
     },
     {
-      name: 'Medium Risk',
-      population: (securityState?.vulnerabilities ?? []).filter(v => v.severity === 'medium').length,
+      name: t('dashboard.mediumRisk'),
+      population: securityState?.appAnalysis?.mediumRiskApps ?? 0,
       color: '#FF9800',
       legendFontColor: '#FFFFFF',
       legendFontSize: 12,
     },
     {
-      name: 'High Risk',
-      population: (securityState?.vulnerabilities ?? []).filter(v => v.severity === 'high').length,
+      name: t('dashboard.highRisk'),
+      population: securityState?.appAnalysis?.highRiskApps ?? 0,
       color: '#F44336',
       legendFontColor: '#FFFFFF',
       legendFontSize: 12,
     },
-  ];
+  ].filter(item => item.population > 0); // Only show non-zero categories
 
-  const networkData = {
-    labels: ['Chrome', 'Facebook', 'WhatsApp', 'Instagram', 'YouTube'],
-    datasets: [
-      {
-        data: [1024, 2048, 1536, 768, 3072],
-      },
-    ],
-  };
+  // Network Data (based on real network analysis)
+  const networkData = React.useMemo(() => {
+    const topConsumers = securityState?.networkAnalysis?.topDataConsumers ?? [];
+    if (topConsumers.length === 0) {
+      return {
+        labels: [t('dashboard.noData')],
+        datasets: [{ data: [0] }],
+      };
+    }
+    
+    return {
+      labels: topConsumers.map(app => app.app?.split(' ')[0] ?? 'Unknown').slice(0, 5),
+      datasets: [{
+        data: topConsumers.map(app => Math.round(app.total / (1024 * 1024))).slice(0, 5), // Convert to MB
+      }],
+    };
+  }, [securityState?.networkAnalysis?.topDataConsumers]);
 
   const deviceHealthData = {
-    labels: ['Battery', 'Storage', 'Memory', 'Temperature'],
+    labels: [t('dashboard.battery'), t('dashboard.storage'), t('dashboard.memory'), t('dashboard.temperature')],
     datasets: [
       {
         data: [
@@ -184,9 +230,25 @@ export default function DashboardScreen({ navigation }) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Security Dashboard</Text>
-          <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-            <Ionicons name="refresh" size={24} color="#4CAF50" />
+          <View>
+            <Text style={styles.headerTitle}>Security Dashboard</Text>
+            {securityState.isScanning && (
+              <View style={styles.scanningIndicator}>
+                <Ionicons name="sync" size={16} color="#4CAF50" />
+                <Text style={styles.scanningText}>Scanning...</Text>
+              </View>
+            )}
+          </View>
+          <TouchableOpacity 
+            onPress={onRefresh} 
+            style={[styles.refreshButton, securityState.isScanning && styles.refreshButtonDisabled]}
+            disabled={securityState.isScanning}
+          >
+            <Ionicons 
+              name={securityState.isScanning ? "sync" : "refresh"} 
+              size={24} 
+              color={securityState.isScanning ? "#888" : "#4CAF50"} 
+            />
           </TouchableOpacity>
         </View>
 
@@ -197,56 +259,65 @@ export default function DashboardScreen({ navigation }) {
             style={styles.securityScoreCard}
           >
             <View style={styles.scoreHeader}>
-              <Text style={styles.scoreTitle}>Security Score</Text>
-              <Text style={styles.scoreStatus}>{getSecurityStatus(securityState.securityScore)}</Text>
+              <Text style={styles.scoreTitle}>Overall Security</Text>
+              <Text style={[styles.scoreStatus, { color: getSecurityColor(securityState.securityScore) }]}>
+                {securityState.overallRisk?.level?.toUpperCase() ?? 'UNKNOWN'}
+              </Text>
             </View>
             <View style={styles.scoreCircle}>
               <Text style={[styles.scoreValue, { color: getSecurityColor(securityState.securityScore) }]}>
-                {securityState.securityScore}
+                {Math.round(securityState.securityScore) || 0}
               </Text>
               <Text style={styles.scoreLabel}>/ 100</Text>
             </View>
-            <Text style={styles.lastScan}>
-              Last scan: {securityState.lastScan ? new Date(securityState.lastScan).toLocaleString() : 'Never'}
-            </Text>
+            <View style={styles.scanInfo}>
+              <Text style={styles.lastScan}>
+                Last scan: {securityState.lastScan ? new Date(securityState.lastScan).toLocaleString() : 'Never'}
+              </Text>
+              {securityState.nextScan && (
+                <Text style={styles.nextScan}>
+                  Next scan: {new Date(securityState.nextScan).toLocaleTimeString()}
+                </Text>
+              )}
+            </View>
           </LinearGradient>
         </View>
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <SecurityCard
-            title="Vulnerabilities"
-            value={securityState?.vulnerabilities?.length ?? 0}
+            title="High Risk Apps"
+            value={securityState?.appAnalysis?.highRiskApps ?? 0}
             icon="warning"
             color="#F44336"
-            onPress={() => navigation.navigate('Vulnerabilities')}
+            onPress={() => navigation.navigate('Apps')}
           />
           <SecurityCard
-            title="Threats"
-            value={securityState?.threats?.length ?? 0}
-            icon="shield"
+            title="Outdated Apps"
+            value={securityState?.appAnalysis?.outdatedApps ?? 0}
+            icon="time"
             color="#FF9800"
-            onPress={() => navigation.navigate('Vulnerabilities')}
+            onPress={() => navigation.navigate('Apps')}
           />
           <SecurityCard
-            title="Apps Monitored"
-            value={securityState?.installedApps?.length ?? 0}
+            title="Total Apps"
+            value={securityState?.appAnalysis?.totalApps ?? 0}
             icon="apps"
             color="#2196F3"
             onPress={() => navigation.navigate('Apps')}
           />
           <SecurityCard
-            title="Network Connections"
-            value={securityState?.networkConnections?.length ?? 0}
-            icon="wifi"
+            title="Vulnerabilities"
+            value={securityState?.vulnerabilities?.length ?? 0}
+            icon="shield-outline"
             color="#9C27B0"
-            onPress={() => navigation.navigate('Network')}
+            onPress={() => navigation.navigate('Vulnerabilities')}
           />
         </View>
 
-        {/* Vulnerability Chart */}
+        {/* App Security Chart */}
         <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Vulnerability Distribution</Text>
+          <Text style={styles.chartTitle}>App Security Distribution</Text>
           <PieChart
             data={pieChartData}
             width={width - 40}
@@ -288,9 +359,9 @@ export default function DashboardScreen({ navigation }) {
         {/* Recent Vulnerabilities */}
         <View style={styles.vulnerabilitiesContainer}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Vulnerabilities</Text>
+            <Text style={styles.sectionTitle}>{t('dashboard.recentVulnerabilities')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Vulnerabilities')}>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.seeAllText}>{t('dashboard.seeAll')}</Text>
             </TouchableOpacity>
           </View>
           {(securityState?.vulnerabilities ?? []).slice(0, 3).map((vulnerability) => (
@@ -300,32 +371,46 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Quick Actions */}
         <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.quickActions')}</Text>
           <View style={styles.actionsGrid}>
             <TouchableOpacity style={styles.actionButton} onPress={onRefresh}>
               <Ionicons name="scan" size={24} color="#4CAF50" />
-              <Text style={styles.actionText}>Scan Now</Text>
+              <Text style={styles.actionText}>{t('dashboard.scanNow')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => navigation.navigate('BreachDetection')}
+            >
+              <Ionicons name="search" size={24} color="#FF6B6B" />
+              <Text style={styles.actionText}>{t('dashboard.breachCheck')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionButton} 
               onPress={() => navigation.navigate('SecurityReport')}
             >
               <Ionicons name="document-text" size={24} color="#2196F3" />
-              <Text style={styles.actionText}>Generate Report</Text>
+              <Text style={styles.actionText}>{t('dashboard.generateReport')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionButton} 
               onPress={() => navigation.navigate('Settings')}
             >
               <Ionicons name="settings" size={24} color="#FF9800" />
-              <Text style={styles.actionText}>Settings</Text>
+              <Text style={styles.actionText}>{t('dashboard.settings')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={() => navigation.navigate('Network')}
+              onPress={() => navigation.navigate('FilesystemScan')}
             >
-              <Ionicons name="wifi" size={24} color="#9C27B0" />
-              <Text style={styles.actionText}>Network Monitor</Text>
+              <Ionicons name="folder-open" size={24} color="#9C27B0" />
+              <Text style={styles.actionText}>{t('dashboard.fileScanner')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton} 
+              onPress={() => navigation.navigate('EnhancedQRScanner')}
+            >
+              <Ionicons name="qr-code" size={24} color="#00BCD4" />
+              <Text style={styles.actionText}>QR Scanner</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -526,7 +611,66 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: '#fff',
-    fontSize: 16,
-    marginTop: 10,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
+  loadingSubText: {
+    color: '#B0B0B0',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f0f23',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    color: '#F44336',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 16,
+  },
+  errorSubText: {
+    color: '#B0B0B0',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  scanningIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  scanningText: {
+    color: '#4CAF50',
+    fontSize: 12,
+    marginLeft: 4,
+    fontStyle: 'italic',
+  },
+  refreshButtonDisabled: {
+    opacity: 0.5,
+  },
+  scanInfo: {
+    alignItems: 'center',
+  },
+  nextScan: {
+    fontSize: 10,
+    color: '#888',
+    marginTop: 2,
   },
 }); 

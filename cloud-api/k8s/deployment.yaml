@@ -1,0 +1,613 @@
+# PocketShield Threat Intelligence API - Kubernetes Deployment Configuration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pocketshield
+  labels:
+    name: pocketshield
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pocketshield-config
+  namespace: pocketshield
+data:
+  # API Configuration
+  API_VERSION: "1.0.0"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  
+  # Rate Limiting
+  RATE_LIMIT_REQUESTS_PER_MINUTE: "100"
+  RATE_LIMIT_BURST_SIZE: "10"
+  
+  # Security Settings
+  JWT_ALGORITHM: "HS256"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "15"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  
+  # Threat Intelligence Settings
+  THREAT_CACHE_TTL: "3600"
+  MAX_URLS_PER_REQUEST: "100"
+  MAX_APPS_PER_REQUEST: "50"
+  
+  # Background Processing
+  CELERY_BROKER_URL: "redis://redis-service:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis-service:6379/0"
+  
+  # External APIs
+  VIRUSTOTAL_API_TIMEOUT: "30"
+  THREAT_FEED_SYNC_INTERVAL: "3600"
+
+---
+# Secret for sensitive configuration
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pocketshield-secrets
+  namespace: pocketshield
+type: Opaque
+data:
+  # Base64 encoded secrets
+  JWT_SECRET_KEY: "your-base64-encoded-jwt-secret"
+  DATABASE_URL: "postgresql://user:password@postgres-service:5432/pocketshield"
+  REDIS_URL: "redis://redis-service:6379/0"
+  VIRUSTOTAL_API_KEY: "your-base64-encoded-virustotal-key"
+  ENCRYPTION_KEY: "your-base64-encoded-encryption-key"
+
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: pocketshield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: pocketshield
+        - name: POSTGRES_USER
+          value: pocketshield_user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        readinessProbe:
+          exec:
+            command:
+            - pg_ready
+            - -U
+            - pocketshield_user
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - pg_ready
+            - -U
+            - pocketshield_user
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: pocketshield
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+
+---
+# PostgreSQL PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: pocketshield
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: fast
+
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: pocketshield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        args:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "512mb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pvc
+
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: pocketshield
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+
+---
+# Redis PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: pocketshield
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: fast
+
+---
+# PocketShield API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pocketshield-api
+  namespace: pocketshield
+  labels:
+    app: pocketshield-api
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  selector:
+    matchLabels:
+      app: pocketshield-api
+  template:
+    metadata:
+      labels:
+        app: pocketshield-api
+        version: v1
+    spec:
+      initContainers:
+      # Database migration init container
+      - name: migrate-db
+        image: pocketshield/threat-api:v1.0.0
+        command:
+        - python
+        - -m
+        - alembic
+        - upgrade
+        - head
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: DATABASE_URL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      
+      containers:
+      - name: api
+        image: pocketshield/threat-api:v1.0.0
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        # Load configuration from ConfigMap
+        - name: API_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: pocketshield-config
+              key: API_VERSION
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: pocketshield-config
+              key: ENVIRONMENT
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: pocketshield-config
+              key: LOG_LEVEL
+        
+        # Load secrets
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: JWT_SECRET_KEY
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: REDIS_URL
+        - name: VIRUSTOTAL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: VIRUSTOTAL_API_KEY
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        
+        # Health checks
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Security context
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        
+        # Volume mounts for logs and temporary files
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: logs-volume
+          mountPath: /app/logs
+      
+      # Background worker container (Celery)
+      - name: worker
+        image: pocketshield/threat-api:v1.0.0
+        command:
+        - celery
+        - -A
+        - app.tasks
+        - worker
+        - --loglevel=info
+        - --concurrency=4
+        env:
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: pocketshield-config
+              key: CELERY_BROKER_URL
+        - name: CELERY_RESULT_BACKEND
+          valueFrom:
+            configMapKeyRef:
+              name: pocketshield-config
+              key: CELERY_RESULT_BACKEND
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: pocketshield-secrets
+              key: DATABASE_URL
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "400m"
+        
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+        
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: logs-volume
+          mountPath: /app/logs
+      
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: logs-volume
+        emptyDir: {}
+      
+      # Pod security policy
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+
+---
+# PocketShield API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: pocketshield-api-service
+  namespace: pocketshield
+  labels:
+    app: pocketshield-api
+spec:
+  selector:
+    app: pocketshield-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: pocketshield-api-hpa
+  namespace: pocketshield
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pocketshield-api
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+
+---
+# Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pocketshield-api-ingress
+  namespace: pocketshield
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "1000"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - api.pocketshield.security
+    secretName: pocketshield-api-tls
+  rules:
+  - host: api.pocketshield.security
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pocketshield-api-service
+            port:
+              number: 80
+
+---
+# Network Policy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pocketshield-network-policy
+  namespace: pocketshield
+spec:
+  podSelector:
+    matchLabels:
+      app: pocketshield-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow database access
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow Redis access
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  # Allow external API calls (VirusTotal, etc.)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pocketshield-api-pdb
+  namespace: pocketshield
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: pocketshield-api
+
+---
+# Service Monitor for Prometheus
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pocketshield-api-metrics
+  namespace: pocketshield
+  labels:
+    app: pocketshield-api
+spec:
+  selector:
+    matchLabels:
+      app: pocketshield-api
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,29 +8,86 @@ import {
   Alert,
   Switch,
   FlatList,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useSecurity } from '../state/SecurityProvider';
 import Toast from 'react-native-toast-message';
+import appSecurityService from '../services/appSecurityService';
 
 export default function AppMonitorScreen({ navigation }) {
+  const { t } = useTranslation();
   const { securityState } = useSecurity();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [appMonitoring, setAppMonitoring] = useState(true);
+  const [installedApps, setInstalledApps] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [securityReport, setSecurityReport] = useState(null);
+
+  // Load installed apps on component mount
+  useEffect(() => {
+    loadInstalledApps();
+  }, []);
 
   const filters = [
     { id: 'all', label: 'All Apps', icon: 'apps' },
     { id: 'high', label: 'High Risk', icon: 'warning' },
     { id: 'medium', label: 'Medium Risk', icon: 'alert-circle' },
     { id: 'low', label: 'Low Risk', icon: 'checkmark-circle' },
+    { id: 'outdated', label: 'Outdated', icon: 'time' },
   ];
 
-  const filteredApps = securityState.installedApps.filter(app => {
+  const filteredApps = installedApps.filter(app => {
     if (selectedFilter === 'all') return true;
-    return app.risk === selectedFilter;
+    if (selectedFilter === 'outdated') return app.securityAnalysis?.hasUpdate;
+    return app.securityAnalysis?.riskLevel === selectedFilter;
   });
+
+  // Load installed apps and perform security analysis
+  const loadInstalledApps = async () => {
+    setIsLoading(true);
+    try {
+      // Get installed apps
+      const apps = await appSecurityService.getInstalledApps();
+      
+      // Check versions against Play Store
+      const appsWithPlayStoreInfo = await appSecurityService.checkPlayStoreVersions(apps);
+      
+      // Generate security report
+      const report = appSecurityService.generateSecurityReport(appsWithPlayStoreInfo);
+      
+      setInstalledApps(appsWithPlayStoreInfo);
+      setSecurityReport(report);
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Apps Scanned',
+        text2: `Found ${apps.length} apps, ${report.highRiskApps + report.mediumRiskApps} need attention`,
+      });
+      
+    } catch (error) {
+      console.error('Error loading installed apps:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Scan Failed',
+        text2: 'Failed to scan installed apps',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Refresh apps data
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadInstalledApps();
+    setRefreshing(false);
+  };
 
   const getRiskColor = (risk) => {
     switch (risk) {
@@ -41,7 +98,9 @@ export default function AppMonitorScreen({ navigation }) {
     }
   };
 
-  const getAppIcon = (appName) => {
+  const getAppIcon = (app) => {
+    if (app.icon) return app.icon;
+    
     const iconMap = {
       'Chrome': 'logo-chrome',
       'Facebook': 'logo-facebook',
@@ -52,8 +111,10 @@ export default function AppMonitorScreen({ navigation }) {
       'Maps': 'map',
       'Camera': 'camera',
       'Settings': 'settings',
+      'PhonePe': 'card',
+      'Paytm': 'wallet',
     };
-    return iconMap[appName] || 'apps';
+    return iconMap[app.name] || 'apps';
   };
 
   const handleUninstallApp = (app) => {
@@ -97,74 +158,151 @@ export default function AppMonitorScreen({ navigation }) {
     );
   };
 
-  const AppCard = ({ app }) => (
-    <View style={[styles.appCard, { borderLeftColor: getRiskColor(app.risk) }]}>
-      <View style={styles.appHeader}>
-        <View style={styles.appInfo}>
-          <Ionicons 
-            name={getAppIcon(app.name)} 
-            size={32} 
-            color={getRiskColor(app.risk)} 
-          />
-          <View style={styles.appDetails}>
-            <Text style={styles.appName}>{app.name}</Text>
-            <Text style={styles.appPackage}>{app.package}</Text>
-            <Text style={styles.appVersion}>v{app.version}</Text>
+  const AppCard = ({ app }) => {
+    const riskLevel = app.securityAnalysis?.riskLevel || 'low';
+    const hasUpdate = app.securityAnalysis?.hasUpdate;
+    const playStoreVersion = app.playStoreInfo?.latestVersion;
+    
+    return (
+      <View style={[styles.appCard, { borderLeftColor: getRiskColor(riskLevel) }]}>
+        <View style={styles.appHeader}>
+          <View style={styles.appInfo}>
+            <Ionicons 
+              name={getAppIcon(app)} 
+              size={32} 
+              color={getRiskColor(riskLevel)} 
+            />
+            <View style={styles.appDetails}>
+              <Text style={styles.appName}>{app.name}</Text>
+              <Text style={styles.appPackage}>{app.packageName}</Text>
+              <View style={styles.versionContainer}>
+                <Text style={styles.appVersion}>v{app.version}</Text>
+                {hasUpdate && playStoreVersion && (
+                  <Text style={styles.updateAvailable}>
+                    Update: v{playStoreVersion}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
+          <View style={styles.appStatus}>
+            <Text style={[styles.riskBadge, { backgroundColor: getRiskColor(riskLevel) }]}>
+              {riskLevel.toUpperCase()} RISK
+            </Text>
+            {hasUpdate && (
+              <View style={styles.updateBadge}>
+                <Ionicons name="arrow-up-circle" size={12} color="#FF9800" />
+                <Text style={styles.updateText}>Update Available</Text>
+              </View>
+            )}
           </View>
         </View>
-        <View style={styles.appStatus}>
-          <Text style={[styles.riskBadge, { backgroundColor: getRiskColor(app.risk) }]}>
-            {app.risk.toUpperCase()} RISK
-          </Text>
-        </View>
-      </View>
 
-      <View style={styles.permissionsContainer}>
-        <Text style={styles.permissionsTitle}>Permissions ({app.permissions.length})</Text>
-        <View style={styles.permissionsList}>
-          {app.permissions.slice(0, 3).map((permission, index) => (
-            <View key={index} style={styles.permissionItem}>
-              <Ionicons name="shield" size={12} color="#FF9800" />
-              <Text style={styles.permissionText}>{permission}</Text>
-            </View>
-          ))}
-          {app.permissions.length > 3 && (
-            <Text style={styles.morePermissions}>+{app.permissions.length - 3} more</Text>
+        {/* Security Issues */}
+        {app.securityAnalysis?.issues?.length > 0 && (
+          <View style={styles.securityIssues}>
+            <Text style={styles.issuesTitle}>⚠️ Security Issues:</Text>
+            {app.securityAnalysis.issues.slice(0, 2).map((issue, index) => (
+              <Text key={index} style={styles.issueText}>• {issue}</Text>
+            ))}
+            {app.securityAnalysis.issues.length > 2 && (
+              <Text style={styles.moreIssues}>
+                +{app.securityAnalysis.issues.length - 2} more issues
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* App Stats */}
+        <View style={styles.appStats}>
+          <View style={styles.statItem}>
+            <Ionicons name="download" size={14} color="#888" />
+            <Text style={styles.statText}>{(app.size || 0).toFixed(1)} MB</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="shield" size={14} color="#888" />
+            <Text style={styles.statText}>{app.permissions.length} permissions</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons name="battery-half" size={14} color="#888" />
+            <Text style={styles.statText}>{(app.batteryUsage || 0).toFixed(1)}%</Text>
+          </View>
+        </View>
+
+        <View style={styles.permissionsContainer}>
+          <Text style={styles.permissionsTitle}>Permissions ({app.permissions.length})</Text>
+          <View style={styles.permissionsList}>
+            {app.permissions.slice(0, 3).map((permission, index) => (
+              <View key={index} style={styles.permissionItem}>
+                <Ionicons name="shield" size={12} color="#FF9800" />
+                <Text style={styles.permissionText}>{permission}</Text>
+              </View>
+            ))}
+            {app.permissions.length > 3 && (
+              <Text style={styles.morePermissions}>+{app.permissions.length - 3} more</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.appActions}>
+          {hasUpdate && (
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.updateButton]}
+              onPress={() => {
+                Alert.alert(
+                  'Update Available',
+                  `A newer version (${playStoreVersion}) is available on Google Play Store with security improvements.`,
+                  [
+                    { text: 'Later', style: 'cancel' },
+                    { text: 'Update Now', onPress: () => {
+                      Toast.show({
+                        type: 'info',
+                        text1: 'Opening Play Store',
+                        text2: `Redirecting to ${app.name} on Play Store`,
+                      });
+                    }}
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="arrow-up-circle" size={16} color="#FFFFFF" />
+              <Text style={styles.actionButtonText}>Update</Text>
+            </TouchableOpacity>
           )}
+          
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.detailsButton]}
+            onPress={() => {
+              const details = [
+                `Name: ${app.name}`,
+                `Package: ${app.packageName}`,
+                `Version: ${app.version}`,
+                `Risk Level: ${riskLevel}`,
+                `Risk Score: ${app.securityAnalysis?.riskScore || 0}`,
+                `Size: ${(app.size || 0).toFixed(1)} MB`,
+                `Battery Usage: ${(app.batteryUsage || 0).toFixed(1)}%`,
+                `Category: ${app.category || 'Unknown'}`,
+                `Permissions: ${app.permissions.join(', ')}`,
+              ];
+              
+              if (app.securityAnalysis?.issues?.length > 0) {
+                details.push(`\nSecurity Issues:\n• ${app.securityAnalysis.issues.join('\n• ')}`);
+              }
+              
+              if (app.securityAnalysis?.recommendations?.length > 0) {
+                details.push(`\nRecommendations:\n• ${app.securityAnalysis.recommendations.join('\n• ')}`);
+              }
+              
+              Alert.alert('App Security Details', details.join('\n'));
+            }}
+          >
+            <Ionicons name="information-circle" size={16} color="#FFFFFF" />
+            <Text style={styles.actionButtonText}>Details</Text>
+          </TouchableOpacity>
         </View>
       </View>
-
-      <View style={styles.appActions}>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.revokeButton]}
-          onPress={() => handleRevokePermissions(app)}
-        >
-          <Ionicons name="shield" size={16} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Revoke Permissions</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.detailsButton]}
-          onPress={() => {
-            Alert.alert('App Details', 
-              `Name: ${app.name}\nPackage: ${app.package}\nVersion: ${app.version}\nRisk Level: ${app.risk}\nPermissions: ${app.permissions.join(', ')}`
-            );
-          }}
-        >
-          <Ionicons name="information-circle" size={16} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Details</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.uninstallButton]}
-          onPress={() => handleUninstallApp(app)}
-        >
-          <Ionicons name="trash" size={16} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Uninstall</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const FilterButton = ({ filter }) => (
     <TouchableOpacity
@@ -188,23 +326,90 @@ export default function AppMonitorScreen({ navigation }) {
     </TouchableOpacity>
   );
 
+  // Security Summary Component
+  const SecuritySummary = () => {
+    if (!securityReport) return null;
+
+    return (
+      <View style={styles.securitySummaryContainer}>
+        <View style={styles.summaryHeader}>
+          <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
+          <Text style={styles.summaryHeaderText}>Security Overview</Text>
+          <Text style={styles.summarySubText}>
+            {securityReport.totalApps} apps scanned • {securityReport.appsNeedingUpdates} updates available
+          </Text>
+        </View>
+        
+        <View style={styles.summaryCards}>
+          <View style={[styles.summaryCard, styles.highRiskCard]}>
+            <Ionicons name="warning" size={20} color="#F44336" />
+            <Text style={styles.summaryNumber}>{securityReport.highRiskApps}</Text>
+            <Text style={styles.summaryCardLabel}>High Risk</Text>
+          </View>
+          
+          <View style={[styles.summaryCard, styles.mediumRiskCard]}>
+            <Ionicons name="alert-circle" size={20} color="#FF9800" />
+            <Text style={styles.summaryNumber}>{securityReport.mediumRiskApps}</Text>
+            <Text style={styles.summaryCardLabel}>Medium Risk</Text>
+          </View>
+          
+          <View style={[styles.summaryCard, styles.lowRiskCard]}>
+            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <Text style={styles.summaryNumber}>{securityReport.lowRiskApps}</Text>
+            <Text style={styles.summaryCardLabel}>Low Risk</Text>
+          </View>
+          
+          <View style={[styles.summaryCard, styles.updateCard]}>
+            <Ionicons name="arrow-up-circle" size={20} color="#2196F3" />
+            <Text style={styles.summaryNumber}>{securityReport.appsNeedingUpdates}</Text>
+            <Text style={styles.summaryCardLabel}>Updates</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#4CAF50']}
+            tintColor="#4CAF50"
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>App Monitor</Text>
-          <TouchableOpacity style={styles.scanButton}>
-            <Ionicons name="refresh" size={20} color="#4CAF50" />
-            <Text style={styles.scanButtonText}>Scan</Text>
+          <Text style={styles.headerTitle}>App Security Monitor</Text>
+          <TouchableOpacity 
+            style={styles.scanButton}
+            onPress={onRefresh}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+              <Ionicons name="refresh" size={20} color="#4CAF50" />
+            )}
+            <Text style={styles.scanButtonText}>
+              {isLoading ? 'Scanning...' : 'Scan'}
+            </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Security Summary */}
+        <SecuritySummary />
 
         {/* App Monitoring Toggle */}
         <View style={styles.monitoringContainer}>
           <View style={styles.monitoringHeader}>
             <Ionicons name="apps" size={20} color="#FFFFFF" />
-            <Text style={styles.monitoringTitle}>App Monitoring</Text>
+            <Text style={styles.monitoringTitle}>Real-time App Monitoring</Text>
           </View>
           <Switch
             value={appMonitoring}
@@ -212,48 +417,6 @@ export default function AppMonitorScreen({ navigation }) {
             trackColor={{ false: '#333', true: '#4CAF50' }}
             thumbColor={appMonitoring ? '#FFFFFF' : '#757575'}
           />
-        </View>
-
-        {/* Summary Cards */}
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryCard}>
-            <LinearGradient
-              colors={['#F44336', '#F4433680']}
-              style={styles.summaryGradient}
-            >
-              <Ionicons name="warning" size={24} color="#FFFFFF" />
-              <Text style={styles.summaryValue}>
-                {securityState.installedApps.filter(app => app.risk === 'high').length}
-              </Text>
-              <Text style={styles.summaryLabel}>High Risk Apps</Text>
-            </LinearGradient>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <LinearGradient
-              colors={['#FF9800', '#FF980080']}
-              style={styles.summaryGradient}
-            >
-              <Ionicons name="alert-circle" size={24} color="#FFFFFF" />
-              <Text style={styles.summaryValue}>
-                {securityState.installedApps.filter(app => app.risk === 'medium').length}
-              </Text>
-              <Text style={styles.summaryLabel}>Medium Risk Apps</Text>
-            </LinearGradient>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <LinearGradient
-              colors={['#4CAF50', '#4CAF5080']}
-              style={styles.summaryGradient}
-            >
-              <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
-              <Text style={styles.summaryValue}>
-                {securityState.installedApps.filter(app => app.risk === 'low').length}
-              </Text>
-              <Text style={styles.summaryLabel}>Safe Apps</Text>
-            </LinearGradient>
-          </View>
         </View>
 
         {/* Filters */}
@@ -270,19 +433,32 @@ export default function AppMonitorScreen({ navigation }) {
         <View style={styles.appsContainer}>
           <View style={styles.appsHeader}>
             <Text style={styles.appsTitle}>
-              {filteredApps.length} Apps Found
+              {isLoading ? 'Scanning Apps...' : `${filteredApps.length} Apps Found`}
             </Text>
-            <TouchableOpacity onPress={() => setSelectedFilter('all')}>
-              <Text style={styles.clearFilterText}>Clear Filter</Text>
-            </TouchableOpacity>
+            {!isLoading && selectedFilter !== 'all' && (
+              <TouchableOpacity onPress={() => setSelectedFilter('all')}>
+                <Text style={styles.clearFilterText}>Clear Filter</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {filteredApps.length === 0 ? (
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.loadingText}>Analyzing installed apps...</Text>
+              <Text style={styles.loadingSubText}>Checking versions and security risks</Text>
+            </View>
+          ) : filteredApps.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="checkmark-circle" size={64} color="#4CAF50" />
-              <Text style={styles.emptyStateTitle}>No Apps Found</Text>
+              <Text style={styles.emptyStateTitle}>
+                {selectedFilter === 'all' ? 'No Apps Found' : `No ${selectedFilter} Risk Apps`}
+              </Text>
               <Text style={styles.emptyStateDescription}>
-                No {selectedFilter !== 'all' ? selectedFilter : ''} risk apps detected.
+                {selectedFilter === 'all' 
+                  ? 'Unable to scan installed apps' 
+                  : `No ${selectedFilter} risk apps detected. Your device is secure!`
+                }
               </Text>
             </View>
           ) : (
@@ -375,31 +551,83 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: 10,
   },
-  summaryContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
+  // Security Summary Styles
+  securitySummaryContainer: {
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 20,
     marginBottom: 20,
-  },
-  summaryCard: {
-    flex: 1,
-    marginHorizontal: 5,
     borderRadius: 12,
-    overflow: 'hidden',
-  },
-  summaryGradient: {
     padding: 15,
-    alignItems: 'center',
   },
-  summaryValue: {
-    fontSize: 24,
+  summaryHeader: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  summaryHeaderText: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginTop: 8,
   },
-  summaryLabel: {
+  summarySubText: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: '#B0B0B0',
     marginTop: 4,
+  },
+  summaryCards: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 3,
+    alignItems: 'center',
+  },
+  highRiskCard: {
+    borderTopWidth: 3,
+    borderTopColor: '#F44336',
+  },
+  mediumRiskCard: {
+    borderTopWidth: 3,
+    borderTopColor: '#FF9800',
+  },
+  lowRiskCard: {
+    borderTopWidth: 3,
+    borderTopColor: '#4CAF50',
+  },
+  updateCard: {
+    borderTopWidth: 3,
+    borderTopColor: '#2196F3',
+  },
+  summaryNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginTop: 5,
+  },
+  summaryCardLabel: {
+    fontSize: 10,
+    color: '#B0B0B0',
+    marginTop: 2,
+  },
+  // Loading Styles
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginTop: 15,
+    fontWeight: '600',
+  },
+  loadingSubText: {
+    fontSize: 12,
+    color: '#B0B0B0',
+    marginTop: 5,
   },
   filtersContainer: {
     paddingHorizontal: 20,
@@ -505,9 +733,20 @@ const styles = StyleSheet.create({
     color: '#B0B0B0',
     marginBottom: 2,
   },
+  versionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
   appVersion: {
     fontSize: 10,
     color: '#757575',
+  },
+  updateAvailable: {
+    fontSize: 9,
+    color: '#FF9800',
+    marginLeft: 8,
+    fontWeight: 'bold',
   },
   appStatus: {
     alignItems: 'flex-end',
@@ -519,6 +758,66 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    marginBottom: 4,
+  },
+  updateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  updateText: {
+    fontSize: 8,
+    color: '#FFFFFF',
+    marginLeft: 2,
+    fontWeight: 'bold',
+  },
+  // Security Issues Styles
+  securityIssues: {
+    backgroundColor: '#2a1a1a',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F44336',
+  },
+  issuesTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#F44336',
+    marginBottom: 5,
+  },
+  issueText: {
+    fontSize: 11,
+    color: '#FFCCCC',
+    marginBottom: 2,
+    lineHeight: 16,
+  },
+  moreIssues: {
+    fontSize: 10,
+    color: '#FF9800',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  // App Stats Styles
+  appStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#2a2a2a',
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 10,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statText: {
+    fontSize: 10,
+    color: '#B0B0B0',
+    marginLeft: 4,
   },
   permissionsContainer: {
     marginBottom: 12,
@@ -575,6 +874,9 @@ const styles = StyleSheet.create({
   },
   uninstallButton: {
     backgroundColor: '#F44336',
+  },
+  updateButton: {
+    backgroundColor: '#4CAF50',
   },
   actionButtonText: {
     color: '#FFFFFF',

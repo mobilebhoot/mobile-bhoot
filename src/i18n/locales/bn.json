@@ -1,0 +1,126 @@
+{
+  "common": {
+    "ok": "ঠিক আছে",
+    "cancel": "বাতিল",
+    "yes": "হ্যাঁ",
+    "no": "না",
+    "save": "সংরক্ষণ",
+    "delete": "মুছুন",
+    "edit": "সম্পাদনা",
+    "search": "অনুসন্ধান",
+    "loading": "লোড হচ্ছে...",
+    "error": "ত্রুটি",
+    "success": "সফলতা",
+    "warning": "সতর্কতা",
+    "info": "তথ্য"
+  },
+  "navigation": {
+    "dashboard": "নিরাপত্তা ড্যাশবোর্ড",
+    "vulnerabilities": "দুর্বলতা",
+    "network": "নেটওয়ার্ক ট্রাফিক",
+    "linkScanner": "লিঙ্ক স্ক্যানার",
+    "apps": "অ্যাপ মনিটর",
+    "settings": "সেটিংস"
+  },
+  "auth": {
+    "welcome": "পকেটশিল্ডে স্বাগতম",
+    "subtitle": "আপনার ব্যক্তিগত মোবাইল নিরাপত্তা রক্ষক",
+    "login": "লগইন",
+    "logout": "লগআউট",
+    "signUp": "সাইন আপ",
+    "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
+    "email": "ইমেইল",
+    "password": "পাসওয়ার্ড",
+    "confirmPassword": "পাসওয়ার্ড নিশ্চিত করুন"
+  },
+  "dashboard": {
+    "title": "নিরাপত্তা ড্যাশবোর্ড",
+    "overallRisk": "সামগ্রিক ঝুঁকির স্কোর",
+    "securityStatus": "নিরাপত্তার অবস্থা",
+    "threatLevel": "হুমকির স্তর",
+    "lastScan": "শেষ স্ক্যান",
+    "quickActions": "দ্রুত কর্ম",
+    "runScan": "নিরাপত্তা স্ক্যান চালান",
+    "viewReport": "রিপোর্ট দেখুন",
+    "low": "কম",
+    "medium": "মাঝারি",
+    "high": "উচ্চ",
+    "critical": "গুরুতর",
+    "secure": "নিরাপদ",
+    "vulnerable": "দুর্বল",
+    "compromised": "আপোসে"
+  },
+  "vulnerabilities": {
+    "title": "দুর্বলতা",
+    "found": "দুর্বলতা পাওয়া গেছে",
+    "none": "কোন দুর্বলতা সনাক্ত করা হয়নি",
+    "criticalIssues": "গুরুতর সমস্যা",
+    "mediumIssues": "মাঝারি সমস্যা",
+    "lowIssues": "কম সমস্যা",
+    "fixNow": "এখনই ঠিক করুন",
+    "ignore": "উপেক্ষা করুন",
+    "details": "বিস্তারিত দেখুন"
+  },
+  "network": {
+    "title": "নেটওয়ার্ক ট্রাফিক",
+    "wifiSecurity": "ওয়াইফাই নিরাপত্তা",
+    "dataUsage": "ডেটা ব্যবহার",
+    "connections": "সক্রিয় সংযোগ",
+    "blocked": "অবরুদ্ধ অনুরোধ",
+    "allowed": "অনুমোদিত অনুরোধ",
+    "insecureNetwork": "অনিরাপদ নেটওয়ার্ক সনাক্ত",
+    "vpnRecommended": "ভিপিএন সুপারিশকৃত"
+  },
+  "linkScanner": {
+    "title": "লিঙ্ক স্ক্যানার",
+    "scanUrl": "URL স্ক্যান করুন",
+    "enterUrl": "স্ক্যান করার জন্য URL প্রবেশ করান",
+    "scan": "স্ক্যান",
+    "safe": "নিরাপদ",
+    "suspicious": "সন্দেহজনক",
+    "malicious": "ক্ষতিকারক",
+    "unknown": "অজানা",
+    "reputation": "খ্যাতির স্কোর"
+  },
+  "apps": {
+    "title": "অ্যাপ মনিটর",
+    "installedApps": "ইনস্টল করা অ্যাপস",
+    "permissions": "অনুমতি",
+    "riskLevel": "ঝুঁকির স্তর",
+    "lastUpdated": "সর্বশেষ আপডেট",
+    "systemApps": "সিস্টেম অ্যাপস",
+    "userApps": "ব্যবহারকারী অ্যাপস"
+  },
+  "settings": {
+    "title": "সেটিংস",
+    "language": "ভাষা",
+    "selectLanguage": "ভাষা নির্বাচন করুন",
+    "notifications": "বিজ্ঞপ্তি",
+    "security": "নিরাপত্তা সেটিংস",
+    "privacy": "গোপনীয়তার সেটিংস",
+    "about": "সম্পর্কে",
+    "version": "সংস্করণ",
+    "support": "সহায়তা",
+    "rateApp": "অ্যাপ রেট করুন",
+    "shareApp": "অ্যাপ শেয়ার করুন",
+    "autoScan": "অটো স্ক্যান",
+    "realTimeProtection": "রিয়েল-টাইম সুরক্ষা",
+    "dataCollection": "ডেটা সংগ্রহ"
+  },
+  "scanner": {
+    "scanning": "স্ক্যান হচ্ছে...",
+    "scanComplete": "স্ক্যান সম্পূর্ণ",
+    "issuesFound": "সমস্যা পাওয়া গেছে",
+    "noIssues": "কোন সমস্যা পাওয়া যায়নি",
+    "recommendations": "সুপারিশ",
+    "fix": "ঠিক করুন",
+    "ignore": "পরে উপেক্ষা করুন"
+  },
+  "alerts": {
+    "securityAlert": "নিরাপত্তা সতর্কতা",
+    "threatDetected": "হুমকি সনাক্ত",
+    "actionRequired": "কর্ম প্রয়োজন",
+    "dismiss": "বাতিল",
+    "viewDetails": "বিস্তারিত দেখুন"
+  }
+}

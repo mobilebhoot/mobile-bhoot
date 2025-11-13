@@ -1,6 +1,10 @@
 import 'react-native-url-polyfill/auto';
 import React from 'react';
 import { AppRegistry } from 'react-native';
+import { useTranslation } from 'react-i18next';
+
+// Initialize i18n
+import './src/i18n/i18n';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -10,16 +14,20 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 
 // Import screens
-import AuthScreen from './src/screens/AuthScreen';
+import AuthenticationScreen from './src/screens/AuthenticationScreen';
+import MobileAuthScreen from './src/screens/MobileAuthScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import VulnerabilityScreen from './src/screens/VulnerabilityScreen';
 import NetworkTrafficScreen from './src/screens/NetworkTrafficScreen';
 import AppMonitorScreen from './src/screens/AppMonitorScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import SecurityReportScreen from './src/screens/SecurityReportScreen';
-import AIChatScreen from './src/screens/AIChatScreen';
-import LinkScannerScreen from './src/screens/LinkScannerScreen';
-// import QRScannerScreen from './src/screens/QRScannerScreen'; // Temporarily disabled
+import EnhancedLinkScannerScreen from './src/screens/EnhancedLinkScannerScreen';
+import UltimateSecurityScreen from './src/screens/UltimateSecurityScreen';
+import EnhancedQRScannerScreen from './src/screens/EnhancedQRScannerScreen';
+import FileSecurityScreen from './src/screens/FileSecurityScreen';
+import FilesystemScanScreen from './src/screens/FilesystemScanScreen';
+import BreachDetectionScreen from './src/screens/BreachDetectionScreen';
 
 // Import components
 import TabBarIcon from './src/components/TabBarIcon';
@@ -29,6 +37,8 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 function TabNavigator() {
+  const { t } = useTranslation();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -45,8 +55,6 @@ function TabNavigator() {
             iconName = focused ? 'link' : 'link-outline';
           } else if (route.name === 'Apps') {
             iconName = focused ? 'apps' : 'apps-outline';
-          } else if (route.name === 'AI Chat') {
-            iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -77,37 +85,32 @@ function TabNavigator() {
       <Tab.Screen 
         name="Dashboard" 
         component={DashboardScreen}
-        options={{ title: 'Security Dashboard' }}
+        options={{ title: t('navigation.dashboard') }}
       />
       <Tab.Screen 
         name="Vulnerabilities" 
         component={VulnerabilityScreen}
-        options={{ title: 'Vulnerabilities' }}
+        options={{ title: t('navigation.vulnerabilities') }}
       />
       <Tab.Screen 
         name="Network" 
         component={NetworkTrafficScreen}
-        options={{ title: 'Network Traffic' }}
+        options={{ title: t('navigation.network') }}
       />
       <Tab.Screen 
         name="Link Scanner" 
-        component={LinkScannerScreen}
-        options={{ title: 'Link Scanner' }}
+        component={UltimateSecurityScreen}
+        options={{ title: t('navigation.linkScanner') }}
       />
       <Tab.Screen 
         name="Apps" 
         component={AppMonitorScreen}
-        options={{ title: 'App Monitor' }}
-      />
-      <Tab.Screen 
-        name="AI Chat" 
-        component={AIChatScreen}
-        options={{ title: 'AI Assistant' }}
+        options={{ title: t('navigation.apps') }}
       />
       <Tab.Screen 
         name="Settings" 
         component={SettingsScreen}
-        options={{ title: 'Settings' }}
+        options={{ title: t('navigation.settings') }}
       />
     </Tab.Navigator>
   );
@@ -135,7 +138,12 @@ export default function App() {
             >
               <Stack.Screen 
                 name="Auth" 
-                component={AuthScreen}
+                component={AuthenticationScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="MobileAuth" 
+                component={MobileAuthScreen}
                 options={{ headerShown: false }}
               />
               <Stack.Screen 
@@ -148,12 +156,36 @@ export default function App() {
                 component={SecurityReportScreen}
                 options={{ title: 'Security Report' }}
               />
-              {/* QR Scanner temporarily disabled for build */}
-              {/* <Stack.Screen 
+              <Stack.Screen 
                 name="QRScanner" 
-                component={QRScannerScreen}
+                component={EnhancedQRScannerScreen}
                 options={{ headerShown: false }}
-              /> */}
+              />
+              <Stack.Screen 
+                name="SecurityCenter" 
+                component={UltimateSecurityScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="FileSecurity" 
+                component={FileSecurityScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="FilesystemScan" 
+                component={FilesystemScanScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="BreachDetection" 
+                component={BreachDetectionScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="EnhancedQRScanner" 
+                component={EnhancedQRScannerScreen}
+                options={{ headerShown: false }}
+              />
             </Stack.Navigator>
           </NavigationContainer>
           <Toast />

@@ -1,7 +1,7 @@
 // Root detection module
 
 import { Platform } from 'react-native';
-import DeviceInfo from 'react-native-device-info';
+import * as Device from 'expo-device';
 
 export const detectRoot = async () => {
   const results = {
@@ -11,8 +11,9 @@ export const detectRoot = async () => {
   };
 
   try {
-    // Check if device is rooted
-    const isRooted = await DeviceInfo.isRooted();
+    // Check if device is rooted (simulated for Expo managed workflow)
+    // Note: Full root detection requires native modules not available in Expo
+    const isRooted = false; // Placeholder - would need bare workflow for actual detection
     
     if (isRooted) {
       results.vulnerabilities.push({
