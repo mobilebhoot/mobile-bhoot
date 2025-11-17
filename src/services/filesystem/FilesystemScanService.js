@@ -7,7 +7,7 @@ import FileHashService from './FileHashService';
 import YARASignatureService from './YARASignatureService';
 import ArchiveHandler from './ArchiveHandler';
 import ReputationService from './ReputationService';
-import { createFilesystemScanTables, ScanDatabaseHelper } from '../database/models/FilesystemScanModels';
+import { createFilesystemScanTables, ScanDatabaseHelper } from '../../database/models/FilesystemScanModels';
 
 /**
  * FilesystemScanService
