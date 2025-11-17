@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
@@ -136,7 +136,7 @@ class FileHashService {
       const hash = await Crypto.digestStringAsync(
         this.getCryptoAlgorithm(algorithm),
         fileContent,
-        { encoding: Crypto.Encoding.BASE64 }
+        { encoding: 'base64' }
       );
 
       onProgress({ stage: 'complete', progress: 100 });
@@ -191,7 +191,7 @@ class FileHashService {
       const hash = await Crypto.digestStringAsync(
         this.getCryptoAlgorithm(algorithm),
         fileContent,
-        { encoding: Crypto.Encoding.BASE64 }
+        { encoding: 'base64' }
       );
 
       onProgress({ 
@@ -220,7 +220,7 @@ class FileHashService {
       return await Crypto.digestStringAsync(
         this.getCryptoAlgorithm(algorithm),
         content,
-        { encoding: Crypto.Encoding.HEX }
+        { encoding: 'hex' }
       );
     } catch (error) {
       console.error('Error computing string hash:', error);

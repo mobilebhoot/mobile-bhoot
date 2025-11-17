@@ -7,6 +7,8 @@ import FileHashService from './FileHashService';
 import YARASignatureService from './YARASignatureService';
 import ArchiveHandler from './ArchiveHandler';
 import ReputationService from './ReputationService';
+import MediaStoreSAFService from './MediaStoreSAFService';
+import SevenStepScanFlow from './SevenStepScanFlow';
 import { createFilesystemScanTables, ScanDatabaseHelper } from '../../database/models/FilesystemScanModels';
 
 /**
@@ -26,6 +28,24 @@ class FilesystemScanService {
       totalThreatsFound: 0,
       lastScanTime: null
     };
+    
+    // Initialize service instances
+    this.fileEnumerationService = new FileEnumerationService();
+    this.fileHashService = new FileHashService();
+    this.yaraSignatureService = new YARASignatureService();
+    this.archiveHandler = new ArchiveHandler();
+    this.reputationService = new ReputationService();
+    this.mediaStoreSAFService = new MediaStoreSAFService();
+    
+    // Initialize 7-step scan flow
+    this.sevenStepScanFlow = new SevenStepScanFlow({
+      mediaStoreSAFService: this.mediaStoreSAFService,
+      fileHashService: this.fileHashService,
+      yaraSignatureService: this.yaraSignatureService,
+      archiveHandler: this.archiveHandler,
+      reputationService: this.reputationService,
+      db: null // Will be set after database initialization
+    });
   }
 
   /**
@@ -45,12 +65,16 @@ class FilesystemScanService {
       await this.loadStatistics();
       
       this.isInitialized = true;
+      // Set database reference for 7-step scan flow
+      this.sevenStepScanFlow.db = this.db;
+      
       console.log('✅ Filesystem Scan Service initialized successfully');
       
       return {
         initialized: true,
         databaseReady: this.db !== null,
         subServicesReady: true,
+        sevenStepFlowReady: true,
         stats: this.stats
       };
     } catch (error) {
@@ -86,11 +110,12 @@ class FilesystemScanService {
       console.log('🔧 Initializing sub-services...');
       
       const initPromises = [
-        FileEnumerationService.initialize(),
-        FileHashService.initialize(),
-        YARASignatureService.initialize(), 
-        ArchiveHandler.initialize(),
-        ReputationService.initialize()
+        this.fileEnumerationService.initialize(),
+        this.fileHashService.initialize(),
+        this.yaraSignatureService.initialize(), 
+        this.archiveHandler.initialize(),
+        this.reputationService.initialize(),
+        this.mediaStoreSAFService.initialize()
       ];
 
       const results = await Promise.all(initPromises);
@@ -282,7 +307,7 @@ class FilesystemScanService {
       }
     };
 
-    const result = await FileEnumerationService.startEnumeration(sessionId, enumerationOptions);
+    const result = await this.fileEnumerationService.startEnumeration(sessionId, enumerationOptions);
     
     console.log(`✅ Enumeration completed: ${result.totalFiles} files discovered`);
     return result;
@@ -414,7 +439,7 @@ class FilesystemScanService {
       // Step 2: Hash computation
       let hashResult = null;
       if (!skipHashComputation) {
-        hashResult = await FileHashService.computeFileHash(file.filePath, 'sha256', {
+        hashResult = await this.fileHashService.computeFileHash(file.filePath, 'sha256', {
           onProgress: () => {} // Silent for individual files
         });
         
@@ -456,7 +481,7 @@ class FilesystemScanService {
       }
 
       // Step 4: YARA signature matching
-      const yaraResult = await YARASignatureService.scanFile(file.filePath, file, {
+      const yaraResult = await this.yaraSignatureService.scanFile(file.filePath, file, {
         onRuleMatch: () => {} // Silent for individual files
       });
 
@@ -677,8 +702,8 @@ class FilesystemScanService {
       console.log('⏹️ Stopping current filesystem scan...');
       
       // Stop all sub-services
-      FileEnumerationService.stopEnumeration();
-      FileHashService.stopProcessing();
+      this.fileEnumerationService.stopEnumeration();
+      this.fileHashService.stopProcessing();
       
       // Update scan status
       await ScanDatabaseHelper.updateScanSession(this.db, this.currentScan.sessionId, {
@@ -718,9 +743,9 @@ class FilesystemScanService {
       ...this.stats,
       currentScan: this.currentScan,
       subServices: {
-        enumeration: FileEnumerationService.isEnumerating(),
-        hashing: FileHashService.isCurrentlyProcessing(),
-        yara: YARASignatureService.getStatistics(),
+        enumeration: this.fileEnumerationService.isEnumerating(),
+        hashing: this.fileHashService.isCurrentlyProcessing(),
+        yara: this.yaraSignatureService.getStatistics(),
         reputation: ReputationService.getStatistics()
       }
     };
@@ -757,6 +782,87 @@ class FilesystemScanService {
     } catch (error) {
       console.error('Error during cleanup:', error);
     }
+  }
+  /**
+   * Execute the exact 7-step comprehensive filesystem scan
+   * This is the main entry point for the complete security scan flow
+   */
+  async startSevenStepScan(options = {}) {
+    if (!this.isInitialized) {
+      throw new Error('FilesystemScanService not initialized');
+    }
+
+    console.log('🛡️ Starting 7-Step Comprehensive Security Scan...');
+    console.log('📋 Scan Flow:');
+    console.log('   1. Enumerate files (MediaStore + SAF)');
+    console.log('   2. Type/size validation');
+    console.log('   3. Archive unpacking (if applicable)'); 
+    console.log('   4. Hash computation (SHA-256)');
+    console.log('   5. YARA/signature match');
+    console.log('   6. Reputation lookup');
+    console.log('   7. Action and logging');
+
+    try {
+      const result = await this.sevenStepScanFlow.executeSevenStepScan(options);
+      
+      // Update global statistics
+      this.stats.totalScans++;
+      this.stats.totalFilesScanned += result.stats.filesEnumerated;
+      this.stats.totalThreatsFound += result.stats.threatsFound;
+      this.stats.lastScanTime = Date.now();
+      await this.saveStatistics();
+
+      // Store scan in history
+      this.scanHistory.unshift({
+        ...result,
+        scanType: '7-step-comprehensive',
+        timestamp: Date.now()
+      });
+      
+      if (this.scanHistory.length > 10) {
+        this.scanHistory = this.scanHistory.slice(0, 10);
+      }
+
+      console.log('✅ 7-Step Comprehensive Security Scan Complete!');
+      return result;
+
+    } catch (error) {
+      console.error('❌ 7-Step Security Scan Failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get real-time scan progress for the 7-step flow
+   */
+  getSevenStepScanProgress() {
+    return this.sevenStepScanFlow ? this.sevenStepScanFlow.getStatistics() : null;
+  }
+
+  /**
+   * Stop the current 7-step scan
+   */
+  async stopSevenStepScan() {
+    if (this.sevenStepScanFlow && this.sevenStepScanFlow.currentScan) {
+      console.log('⏹️ Stopping 7-step security scan...');
+      
+      // Mark as cancelled in database if available
+      if (this.db && this.sevenStepScanFlow.currentScan.sessionId) {
+        try {
+          await this.db.runAsync(
+            'UPDATE scan_sessions SET status = ?, end_time = ? WHERE session_id = ?',
+            ['cancelled', Date.now(), this.sevenStepScanFlow.currentScan.sessionId]
+          );
+        } catch (error) {
+          console.warn('Failed to update scan status:', error.message);
+        }
+      }
+      
+      this.sevenStepScanFlow.currentScan.status = 'cancelled';
+      return { stopped: true, sessionId: this.sevenStepScanFlow.currentScan.sessionId };
+    }
+    
+    return { stopped: false, reason: 'No active scan' };
   }
 }
 

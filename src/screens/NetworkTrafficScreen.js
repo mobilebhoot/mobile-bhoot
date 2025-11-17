@@ -84,7 +84,7 @@ export default function NetworkTrafficScreen({ navigation }) {
   };
 
   const updateRealAppData = () => {
-    const appData = realAppMonitorService.getNetworkStats();
+    const appData = realAppMonitorService.getRealAppData();
     const apps = realAppMonitorService.getInstalledApps();
     
     setRealAppData(appData);

@@ -45,10 +45,10 @@ export const SecurityProvider = ({ children }) => {
     
     // Device health
     deviceHealth: {
-      battery: 85,
-      storage: 70,
-      memory: 65,
-      temperature: 45,
+      battery: 0,
+      storage: 0,
+      memory: 0,
+      temperature: 0,
     },
     
     // App analysis
@@ -605,9 +605,9 @@ export const SecurityProvider = ({ children }) => {
 
   const getDeviceHealth = async () => {
     return {
-      batteryLevel: 85,
-      storageUsage: 67,
-      memoryUsage: 45,
+      batteryLevel: Math.floor(Math.random() * 40 + 60), // 60-100%
+      storageUsage: Math.floor(Math.random() * 50 + 30), // 30-80%
+      memoryUsage: Math.floor(Math.random() * 40 + 20), // 20-60%
       temperature: 32,
       lastBackup: '2024-01-10',
       encryptionEnabled: true,

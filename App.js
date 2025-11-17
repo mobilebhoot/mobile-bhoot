@@ -85,7 +85,7 @@ function TabNavigator() {
       <Tab.Screen 
         name="Dashboard" 
         component={DashboardScreen}
-        options={{ title: t('navigation.dashboard') }}
+        options={{ title: 'Dashboard' }}
       />
       <Tab.Screen 
         name="Deep Scan" 
@@ -105,12 +105,12 @@ function TabNavigator() {
       <Tab.Screen 
         name="Network" 
         component={NetworkTrafficScreen}
-        options={{ title: t('navigation.network') }}
+        options={{ title: 'Network Monitor' }}
       />
       <Tab.Screen 
         name="Settings" 
         component={SettingsScreen}
-        options={{ title: t('navigation.settings') }}
+        options={{ title: 'Settings' }}
       />
     </Tab.Navigator>
   );

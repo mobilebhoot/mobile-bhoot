@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { Platform } from 'react-native';
@@ -14,6 +14,7 @@ class FileEnumerationService {
     this.isScanning = false;
     this.currentSession = null;
     this.mediaStoreSupported = Platform.OS === 'android';
+    this.mediaLibraryAccess = false;
     this.safSupported = Platform.OS === 'android' && Platform.Version >= 19;
   }
 
@@ -24,20 +25,38 @@ class FileEnumerationService {
     try {
       console.log('🔍 Initializing File Enumeration Service...');
       
-      // Request media library permissions for MediaStore access
-      const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
-      if (mediaStatus !== 'granted') {
-        console.warn('⚠️ Media library permission not granted');
+      // Request media library permissions for MediaStore access (optional)
+      try {
+        const permissionResult = await MediaLibrary.requestPermissionsAsync(false);
+        const mediaStatus = permissionResult?.status;
+        
+        if (mediaStatus !== 'granted') {
+          console.warn('⚠️ Media library permission not granted - limited file access');
+          this.mediaLibraryAccess = false;
+        } else {
+          console.log('✅ Media library access granted');
+          this.mediaLibraryAccess = true;
+        }
+      } catch (error) {
+        console.warn('⚠️ Media library permission request failed:', error.message);
+        this.mediaLibraryAccess = false;
+        // Continue without media library access
       }
 
       // Check for all files access permission (Android 11+)
       const hasAllFilesAccess = await this.checkAllFilesAccess();
       console.log(`📁 All files access: ${hasAllFilesAccess ? '✅ Granted' : '❌ Not granted'}`);
 
+      this.isInitialized = true;
+      console.log('✅ File Enumeration Service initialized successfully');
+
       return {
-        mediaStoreAccess: mediaStatus === 'granted',
+        initialized: true,
+        mediaStoreSupported: this.mediaStoreSupported,
+        safSupported: this.safSupported,
+        mediaStoreAccess: this.mediaLibraryAccess,
         allFilesAccess: hasAllFilesAccess,
-        safSupported: this.safSupported
+        supportedDirectories: this.supportedDirectories?.length || 0
       };
     } catch (error) {
       console.error('❌ Failed to initialize file enumeration:', error);
