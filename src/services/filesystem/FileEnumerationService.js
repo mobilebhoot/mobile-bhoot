@@ -607,4 +607,4 @@ class FileEnumerationService {
   }
 }
 
-export default new FileEnumerationService();
+export default FileEnumerationService;

@@ -553,4 +553,4 @@ class FileHashService {
   }
 }
 
-export default new FileHashService();
+export default FileHashService;

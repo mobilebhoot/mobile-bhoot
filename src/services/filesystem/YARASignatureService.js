@@ -738,4 +738,4 @@ class YARASignatureService {
   }
 }
 
-export default new YARASignatureService();
+export default YARASignatureService;

@@ -220,7 +220,7 @@ export default function UltimateSecurityScreen({ navigation }) {
   const LiveSecurityHeader = () => (
     <View style={styles.liveHeader}>
       <View style={styles.headerLeft}>
-        <Text style={styles.headerTitle}>Security Center</Text>
+        <Text style={styles.headerTitle}>URL Guard</Text>
         <View style={styles.liveStatus}>
           <View style={[styles.statusDot, { backgroundColor: isMonitoringEnabled ? '#4CAF50' : '#F44336' }]} />
           <Text style={styles.statusText}>
@@ -376,7 +376,7 @@ export default function UltimateSecurityScreen({ navigation }) {
   const ScannerTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.scannerSection}>
-        <Text style={styles.sectionTitle}>URL Scanner</Text>
+        <Text style={styles.sectionTitle}>URL Security Scanner</Text>
         
         <View style={styles.inputContainer}>
           <TextInput

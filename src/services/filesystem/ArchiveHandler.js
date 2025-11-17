@@ -588,4 +588,4 @@ class ArchiveHandler {
   }
 }
 
-export default new ArchiveHandler();
+export default ArchiveHandler;

@@ -654,4 +654,4 @@ class ReputationService {
   }
 }
 
-export default new ReputationService();
+export default ReputationService;

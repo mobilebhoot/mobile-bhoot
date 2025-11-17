@@ -6,494 +6,518 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Switch,
   FlatList,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSecurity } from '../state/SecurityProvider';
+import { COLORS, SIZES, GRADIENTS, SHADOWS } from '../app/theme';
 import Toast from 'react-native-toast-message';
-import appSecurityService from '../services/appSecurityService';
+import * as Application from 'expo-application';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import installedAppsService from '../services/installedAppsService';
+import playStoreService from '../services/playStoreService';
+
+const { width } = Dimensions.get('window');
 
 export default function AppMonitorScreen({ navigation }) {
   const { t } = useTranslation();
   const { securityState } = useSecurity();
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [appMonitoring, setAppMonitoring] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
   const [installedApps, setInstalledApps] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [securityReport, setSecurityReport] = useState(null);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [scanProgress, setScanProgress] = useState(0);
+  const [currentApp, setCurrentApp] = useState('');
+  const [scanResults, setScanResults] = useState({
+    totalApps: 0,
+    outdatedApps: 0,
+    securityIssues: 0,
+    suspiciousApps: 0,
+    unknownSources: 0,
+    highRiskPermissions: 0
+  });
 
-  // Load installed apps on component mount
+  // Filter options
+  const filterOptions = [
+    { id: 'all', label: 'All Apps', icon: 'apps' },
+    { id: 'outdated', label: 'Outdated', icon: 'time', color: COLORS.warning },
+    { id: 'security', label: 'Security Issues', icon: 'shield', color: COLORS.error },
+    { id: 'suspicious', label: 'Suspicious', icon: 'warning', color: COLORS.error },
+    { id: 'system', label: 'System Apps', icon: 'settings', color: COLORS.info },
+    { id: 'user', label: 'User Apps', icon: 'person', color: COLORS.success }
+  ];
+
   useEffect(() => {
     loadInstalledApps();
   }, []);
 
-  const filters = [
-    { id: 'all', label: 'All Apps', icon: 'apps' },
-    { id: 'high', label: 'High Risk', icon: 'warning' },
-    { id: 'medium', label: 'Medium Risk', icon: 'alert-circle' },
-    { id: 'low', label: 'Low Risk', icon: 'checkmark-circle' },
-    { id: 'outdated', label: 'Outdated', icon: 'time' },
-  ];
-
-  const filteredApps = installedApps.filter(app => {
-    if (selectedFilter === 'all') return true;
-    if (selectedFilter === 'outdated') return app.securityAnalysis?.hasUpdate;
-    return app.securityAnalysis?.riskLevel === selectedFilter;
-  });
-
-  // Load installed apps and perform security analysis
   const loadInstalledApps = async () => {
-    setIsLoading(true);
     try {
-      // Get installed apps
-      const apps = await appSecurityService.getInstalledApps();
-      
-      // Check versions against Play Store
-      const appsWithPlayStoreInfo = await appSecurityService.checkPlayStoreVersions(apps);
-      
-      // Generate security report
-      const report = appSecurityService.generateSecurityReport(appsWithPlayStoreInfo);
-      
-      setInstalledApps(appsWithPlayStoreInfo);
-      setSecurityReport(report);
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Apps Scanned',
-        text2: `Found ${apps.length} apps, ${report.highRiskApps + report.mediumRiskApps} need attention`,
-      });
-      
+      setIsScanning(true);
+      const apps = await installedAppsService.getInstalledApps();
+      setInstalledApps(apps);
+      setScanResults(prev => ({ ...prev, totalApps: apps.length }));
     } catch (error) {
-      console.error('Error loading installed apps:', error);
+      console.error('Failed to load apps:', error);
       Toast.show({
         type: 'error',
-        text1: 'Scan Failed',
-        text2: 'Failed to scan installed apps',
+        text1: 'Failed to load apps',
+        text2: 'Please try again',
+        position: 'bottom'
       });
     } finally {
-      setIsLoading(false);
+      setIsScanning(false);
     }
   };
 
-  // Refresh apps data
-  const onRefresh = async () => {
+  const startComprehensiveScan = async () => {
+    if (isScanning) return;
+
+    setIsScanning(true);
+    setScanProgress(0);
+    setCurrentApp('');
+
+    try {
+      const apps = await installedAppsService.getInstalledApps();
+      setInstalledApps(apps);
+      
+      let scannedResults = {
+        totalApps: apps.length,
+        outdatedApps: 0,
+        securityIssues: 0,
+        suspiciousApps: 0,
+        unknownSources: 0,
+        highRiskPermissions: 0
+      };
+
+      // Scan each app
+      for (let i = 0; i < apps.length; i++) {
+        const app = apps[i];
+        setCurrentApp(app.appName || app.packageName);
+        setScanProgress(((i + 1) / apps.length) * 100);
+
+        // Version comparison with Play Store
+        try {
+          const playStoreInfo = await playStoreService.getAppInfo(app.packageName);
+          if (playStoreInfo && playStoreInfo.version !== app.versionName) {
+            scannedResults.outdatedApps++;
+            app.isOutdated = true;
+            app.playStoreVersion = playStoreInfo.version;
+            app.hasUpdate = true;
+          }
+        } catch (error) {
+          console.log(`Failed to check Play Store version for ${app.packageName}`);
+        }
+
+        // Security analysis
+        const securityAnalysis = await analyzeAppSecurity(app);
+        if (securityAnalysis.hasSecurityIssues) {
+          scannedResults.securityIssues++;
+          app.securityIssues = securityAnalysis.issues;
+        }
+
+        if (securityAnalysis.isSuspicious) {
+          scannedResults.suspiciousApps++;
+          app.isSuspicious = true;
+          app.suspiciousReasons = securityAnalysis.suspiciousReasons;
+        }
+
+        if (securityAnalysis.isUnknownSource) {
+          scannedResults.unknownSources++;
+          app.isUnknownSource = true;
+        }
+
+        if (securityAnalysis.hasHighRiskPermissions) {
+          scannedResults.highRiskPermissions++;
+          app.hasHighRiskPermissions = true;
+          app.highRiskPermissions = securityAnalysis.highRiskPermissions;
+        }
+
+        // Add brief delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      setScanResults(scannedResults);
+      setInstalledApps(apps);
+
+      Toast.show({
+        type: scannedResults.securityIssues > 0 ? 'error' : 'success',
+        text1: 'App Scan Complete',
+        text2: `Scanned ${scannedResults.totalApps} apps, found ${scannedResults.securityIssues + scannedResults.outdatedApps} issues`,
+        position: 'bottom'
+      });
+
+    } catch (error) {
+      console.error('App scan failed:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'App Scan Failed',
+        text2: error.message || 'Please try again',
+        position: 'bottom'
+      });
+    } finally {
+      setIsScanning(false);
+      setCurrentApp('');
+      setScanProgress(0);
+    }
+  };
+
+  // Analyze app security
+  const analyzeAppSecurity = async (app) => {
+    const analysis = {
+      hasSecurityIssues: false,
+      isSuspicious: false,
+      isUnknownSource: false,
+      hasHighRiskPermissions: false,
+      issues: [],
+      suspiciousReasons: [],
+      highRiskPermissions: []
+    };
+
+    // Check for suspicious permissions
+    const highRiskPermissions = [
+      'android.permission.READ_SMS',
+      'android.permission.SEND_SMS',
+      'android.permission.READ_CONTACTS',
+      'android.permission.CAMERA',
+      'android.permission.RECORD_AUDIO',
+      'android.permission.ACCESS_FINE_LOCATION',
+      'android.permission.READ_PHONE_STATE',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+      'android.permission.SYSTEM_ALERT_WINDOW',
+      'android.permission.WRITE_SETTINGS',
+      'android.permission.DEVICE_ADMIN'
+    ];
+
+    if (app.permissions) {
+      const appHighRiskPerms = app.permissions.filter(perm => 
+        highRiskPermissions.includes(perm)
+      );
+      
+      if (appHighRiskPerms.length > 0) {
+        analysis.hasHighRiskPermissions = true;
+        analysis.highRiskPermissions = appHighRiskPerms;
+      }
+
+      // Too many permissions is suspicious
+      if (app.permissions.length > 20) {
+        analysis.isSuspicious = true;
+        analysis.suspiciousReasons.push('App requests too many permissions');
+      }
+    }
+
+    // Check for outdated apps (potential security risk)
+    if (app.isOutdated) {
+      analysis.hasSecurityIssues = true;
+      analysis.issues.push('App version is outdated');
+    }
+
+    // Check installation source
+    if (app.installerPackageName !== 'com.android.vending') {
+      analysis.isUnknownSource = true;
+      if (!app.installerPackageName) {
+        analysis.isSuspicious = true;
+        analysis.suspiciousReasons.push('App installed from unknown source');
+      }
+    }
+
+    // Check for suspicious package names
+    const suspiciousKeywords = ['hack', 'crack', 'mod', 'fake', 'virus', 'trojan'];
+    const packageName = app.packageName.toLowerCase();
+    
+    if (suspiciousKeywords.some(keyword => packageName.includes(keyword))) {
+      analysis.isSuspicious = true;
+      analysis.suspiciousReasons.push('App has suspicious package name');
+    }
+
+    return analysis;
+  };
+
+  const handleRefresh = async () => {
     setRefreshing(true);
     await loadInstalledApps();
     setRefreshing(false);
   };
 
-  const getRiskColor = (risk) => {
-    switch (risk) {
-      case 'high': return '#F44336';
-      case 'medium': return '#FF9800';
-      case 'low': return '#4CAF50';
-      default: return '#757575';
+  const getFilteredApps = () => {
+    switch (selectedFilter) {
+      case 'outdated':
+        return installedApps.filter(app => app.isOutdated);
+      case 'security':
+        return installedApps.filter(app => app.securityIssues && app.securityIssues.length > 0);
+      case 'suspicious':
+        return installedApps.filter(app => app.isSuspicious);
+      case 'system':
+        return installedApps.filter(app => app.isSystemApp);
+      case 'user':
+        return installedApps.filter(app => !app.isSystemApp);
+      default:
+        return installedApps;
     }
   };
 
-  const getAppIcon = (app) => {
-    if (app.icon) return app.icon;
-    
-    const iconMap = {
-      'Chrome': 'logo-chrome',
-      'Facebook': 'logo-facebook',
-      'WhatsApp': 'logo-whatsapp',
-      'Instagram': 'logo-instagram',
-      'YouTube': 'logo-youtube',
-      'Gmail': 'mail',
-      'Maps': 'map',
-      'Camera': 'camera',
-      'Settings': 'settings',
-      'PhonePe': 'card',
-      'Paytm': 'wallet',
-    };
-    return iconMap[app.name] || 'apps';
-  };
-
-  const handleUninstallApp = (app) => {
-    Alert.alert(
-      'Uninstall App',
-      `Are you sure you want to uninstall "${app.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Uninstall',
-          style: 'destructive',
-          onPress: () => {
-            Toast.show({
-              type: 'success',
-              text1: 'App Uninstalled',
-              text2: `${app.name} has been removed`,
-            });
-          },
-        },
-      ]
+  const renderFilterButton = (filter) => {
+    const isSelected = selectedFilter === filter.id;
+    return (
+      <TouchableOpacity
+        key={filter.id}
+        style={[
+          styles.filterButton,
+          isSelected && { backgroundColor: filter.color || COLORS.primary }
+        ]}
+        onPress={() => setSelectedFilter(filter.id)}
+      >
+        <Ionicons 
+          name={filter.icon} 
+          size={SIZES.iconSm} 
+          color={isSelected ? COLORS.textPrimary : COLORS.textSecondary}
+        />
+        <Text style={[
+          styles.filterText,
+          isSelected && { color: COLORS.textPrimary }
+        ]}>
+          {filter.label}
+        </Text>
+      </TouchableOpacity>
     );
   };
 
-  const handleRevokePermissions = (app) => {
-    Alert.alert(
-      'Revoke Permissions',
-      `Are you sure you want to revoke permissions for "${app.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Revoke',
-          onPress: () => {
-            Toast.show({
-              type: 'success',
-              text1: 'Permissions Revoked',
-              text2: `${app.name} permissions have been revoked`,
-            });
-          },
-        },
-      ]
-    );
-  };
-
-  const AppCard = ({ app }) => {
-    const riskLevel = app.securityAnalysis?.riskLevel || 'low';
-    const hasUpdate = app.securityAnalysis?.hasUpdate;
-    const playStoreVersion = app.playStoreInfo?.latestVersion;
+  const renderAppItem = ({ item: app }) => {
+    const hasIssues = app.isOutdated || app.isSuspicious || (app.securityIssues && app.securityIssues.length > 0);
     
     return (
-      <View style={[styles.appCard, { borderLeftColor: getRiskColor(riskLevel) }]}>
-        <View style={styles.appHeader}>
-          <View style={styles.appInfo}>
-            <Ionicons 
-              name={getAppIcon(app)} 
-              size={32} 
-              color={getRiskColor(riskLevel)} 
-            />
-            <View style={styles.appDetails}>
-              <Text style={styles.appName}>{app.name}</Text>
-              <Text style={styles.appPackage}>{app.packageName}</Text>
-              <View style={styles.versionContainer}>
-                <Text style={styles.appVersion}>v{app.version}</Text>
-                {hasUpdate && playStoreVersion && (
-                  <Text style={styles.updateAvailable}>
-                    Update: v{playStoreVersion}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
-          <View style={styles.appStatus}>
-            <Text style={[styles.riskBadge, { backgroundColor: getRiskColor(riskLevel) }]}>
-              {riskLevel.toUpperCase()} RISK
-            </Text>
-            {hasUpdate && (
-              <View style={styles.updateBadge}>
-                <Ionicons name="arrow-up-circle" size={12} color="#FF9800" />
-                <Text style={styles.updateText}>Update Available</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Security Issues */}
-        {app.securityAnalysis?.issues?.length > 0 && (
-          <View style={styles.securityIssues}>
-            <Text style={styles.issuesTitle}>⚠️ Security Issues:</Text>
-            {app.securityAnalysis.issues.slice(0, 2).map((issue, index) => (
-              <Text key={index} style={styles.issueText}>• {issue}</Text>
-            ))}
-            {app.securityAnalysis.issues.length > 2 && (
-              <Text style={styles.moreIssues}>
-                +{app.securityAnalysis.issues.length - 2} more issues
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* App Stats */}
-        <View style={styles.appStats}>
-          <View style={styles.statItem}>
-            <Ionicons name="download" size={14} color="#888" />
-            <Text style={styles.statText}>{(app.size || 0).toFixed(1)} MB</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="shield" size={14} color="#888" />
-            <Text style={styles.statText}>{app.permissions.length} permissions</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Ionicons name="battery-half" size={14} color="#888" />
-            <Text style={styles.statText}>{(app.batteryUsage || 0).toFixed(1)}%</Text>
-          </View>
-        </View>
-
-        <View style={styles.permissionsContainer}>
-          <Text style={styles.permissionsTitle}>Permissions ({app.permissions.length})</Text>
-          <View style={styles.permissionsList}>
-            {app.permissions.slice(0, 3).map((permission, index) => (
-              <View key={index} style={styles.permissionItem}>
-                <Ionicons name="shield" size={12} color="#FF9800" />
-                <Text style={styles.permissionText}>{permission}</Text>
-              </View>
-            ))}
-            {app.permissions.length > 3 && (
-              <Text style={styles.morePermissions}>+{app.permissions.length - 3} more</Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.appActions}>
-          {hasUpdate && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.updateButton]}
-              onPress={() => {
-                Alert.alert(
-                  'Update Available',
-                  `A newer version (${playStoreVersion}) is available on Google Play Store with security improvements.`,
-                  [
-                    { text: 'Later', style: 'cancel' },
-                    { text: 'Update Now', onPress: () => {
-                      Toast.show({
-                        type: 'info',
-                        text1: 'Opening Play Store',
-                        text2: `Redirecting to ${app.name} on Play Store`,
-                      });
-                    }}
-                  ]
-                );
-              }}
-            >
-              <Ionicons name="arrow-up-circle" size={16} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>Update</Text>
-            </TouchableOpacity>
+      <TouchableOpacity 
+        style={[
+          styles.appItem,
+          hasIssues && { borderLeftColor: COLORS.error, borderLeftWidth: 4 }
+        ]}
+        onPress={() => showAppDetails(app)}
+      >
+        <View style={styles.appIcon}>
+          {app.icon ? (
+            <Image source={{ uri: app.icon }} style={styles.appIconImage} />
+          ) : (
+            <Ionicons name="apps" size={SIZES.iconLg} color={COLORS.textSecondary} />
           )}
-          
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.detailsButton]}
-            onPress={() => {
-              const details = [
-                `Name: ${app.name}`,
-                `Package: ${app.packageName}`,
-                `Version: ${app.version}`,
-                `Risk Level: ${riskLevel}`,
-                `Risk Score: ${app.securityAnalysis?.riskScore || 0}`,
-                `Size: ${(app.size || 0).toFixed(1)} MB`,
-                `Battery Usage: ${(app.batteryUsage || 0).toFixed(1)}%`,
-                `Category: ${app.category || 'Unknown'}`,
-                `Permissions: ${app.permissions.join(', ')}`,
-              ];
-              
-              if (app.securityAnalysis?.issues?.length > 0) {
-                details.push(`\nSecurity Issues:\n• ${app.securityAnalysis.issues.join('\n• ')}`);
-              }
-              
-              if (app.securityAnalysis?.recommendations?.length > 0) {
-                details.push(`\nRecommendations:\n• ${app.securityAnalysis.recommendations.join('\n• ')}`);
-              }
-              
-              Alert.alert('App Security Details', details.join('\n'));
-            }}
-          >
-            <Ionicons name="information-circle" size={16} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Details</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-  const FilterButton = ({ filter }) => (
-    <TouchableOpacity
-      style={[
-        styles.filterButton,
-        selectedFilter === filter.id && styles.filterButtonActive
-      ]}
-      onPress={() => setSelectedFilter(filter.id)}
-    >
-      <Ionicons 
-        name={filter.icon} 
-        size={16} 
-        color={selectedFilter === filter.id ? '#FFFFFF' : '#757575'} 
-      />
-      <Text style={[
-        styles.filterButtonText,
-        selectedFilter === filter.id && styles.filterButtonTextActive
-      ]}>
-        {filter.label}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  // Security Summary Component
-  const SecuritySummary = () => {
-    if (!securityReport) return null;
-
-    return (
-      <View style={styles.securitySummaryContainer}>
-        <View style={styles.summaryHeader}>
-          <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
-          <Text style={styles.summaryHeaderText}>Security Overview</Text>
-          <Text style={styles.summarySubText}>
-            {securityReport.totalApps} apps scanned • {securityReport.appsNeedingUpdates} updates available
-          </Text>
         </View>
         
-        <View style={styles.summaryCards}>
-          <View style={[styles.summaryCard, styles.highRiskCard]}>
-            <Ionicons name="warning" size={20} color="#F44336" />
-            <Text style={styles.summaryNumber}>{securityReport.highRiskApps}</Text>
-            <Text style={styles.summaryCardLabel}>High Risk</Text>
-          </View>
+        <View style={styles.appInfo}>
+          <Text style={styles.appName} numberOfLines={1}>
+            {app.appName || app.packageName}
+          </Text>
+          <Text style={styles.appPackage} numberOfLines={1}>
+            {app.packageName}
+          </Text>
           
-          <View style={[styles.summaryCard, styles.mediumRiskCard]}>
-            <Ionicons name="alert-circle" size={20} color="#FF9800" />
-            <Text style={styles.summaryNumber}>{securityReport.mediumRiskApps}</Text>
-            <Text style={styles.summaryCardLabel}>Medium Risk</Text>
-          </View>
-          
-          <View style={[styles.summaryCard, styles.lowRiskCard]}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={styles.summaryNumber}>{securityReport.lowRiskApps}</Text>
-            <Text style={styles.summaryCardLabel}>Low Risk</Text>
-          </View>
-          
-          <View style={[styles.summaryCard, styles.updateCard]}>
-            <Ionicons name="arrow-up-circle" size={20} color="#2196F3" />
-            <Text style={styles.summaryNumber}>{securityReport.appsNeedingUpdates}</Text>
-            <Text style={styles.summaryCardLabel}>Updates</Text>
+          <View style={styles.appMeta}>
+            <Text style={styles.appVersion}>
+              v{app.versionName || 'Unknown'}
+            </Text>
+            
+            {app.isOutdated && (
+              <View style={styles.issueTag}>
+                <Ionicons name="time" size={12} color={COLORS.warning} />
+                <Text style={[styles.issueText, { color: COLORS.warning }]}>
+                  Update Available
+                </Text>
+              </View>
+            )}
+            
+            {app.isSuspicious && (
+              <View style={styles.issueTag}>
+                <Ionicons name="warning" size={12} color={COLORS.error} />
+                <Text style={[styles.issueText, { color: COLORS.error }]}>
+                  Suspicious
+                </Text>
+              </View>
+            )}
           </View>
         </View>
-      </View>
+        
+        <View style={styles.appActions}>
+          <Ionicons name="chevron-forward" size={SIZES.iconMd} color={COLORS.textSecondary} />
+        </View>
+      </TouchableOpacity>
     );
   };
+
+  const showAppDetails = (app) => {
+    const issues = [];
+    
+    if (app.isOutdated) {
+      issues.push(`Current Version: ${app.versionName}`);
+      issues.push(`Latest Version: ${app.playStoreVersion}`);
+    }
+    
+    if (app.isSuspicious && app.suspiciousReasons) {
+      issues.push(...app.suspiciousReasons);
+    }
+    
+    if (app.securityIssues) {
+      issues.push(...app.securityIssues);
+    }
+
+    Alert.alert(
+      app.appName || app.packageName,
+      issues.length > 0 ? issues.join('\n\n') : 'No issues found with this app',
+      [
+        { text: 'OK', style: 'default' },
+        ...(app.hasUpdate ? [{ 
+          text: 'Update App', 
+          onPress: () => openPlayStore(app.packageName)
+        }] : [])
+      ]
+    );
+  };
+
+  const openPlayStore = (packageName) => {
+    // This would open the Play Store app page
+    Toast.show({
+      type: 'info',
+      text1: 'Opening Play Store',
+      text2: packageName,
+      position: 'bottom'
+    });
+  };
+
+  const renderResultsGrid = () => (
+    <View style={styles.resultsContainer}>
+      <Text style={styles.resultsTitle}>Scan Results</Text>
+      <View style={styles.resultsGrid}>
+        <View style={styles.resultItem}>
+          <Text style={styles.resultNumber}>{scanResults.totalApps}</Text>
+          <Text style={styles.resultLabel}>Total Apps</Text>
+          </View>
+        <View style={styles.resultItem}>
+          <Text style={[styles.resultNumber, { color: COLORS.warning }]}>
+            {scanResults.outdatedApps}
+          </Text>
+          <Text style={styles.resultLabel}>Outdated Apps</Text>
+        </View>
+        <View style={styles.resultItem}>
+          <Text style={[styles.resultNumber, { color: COLORS.error }]}>
+            {scanResults.securityIssues}
+          </Text>
+          <Text style={styles.resultLabel}>Security Issues</Text>
+        </View>
+        <View style={styles.resultItem}>
+          <Text style={[styles.resultNumber, { color: COLORS.error }]}>
+            {scanResults.suspiciousApps}
+          </Text>
+          <Text style={styles.resultLabel}>Suspicious Apps</Text>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#4CAF50']}
-            tintColor="#4CAF50"
-          />
-        }
-      >
+      <LinearGradient colors={GRADIENTS.primary} style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.primary}
+              colors={[COLORS.primary]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>App Security Monitor</Text>
-          <TouchableOpacity 
-            style={styles.scanButton}
-            onPress={onRefresh}
-            disabled={isLoading}
+            <Text style={styles.title}>App Security Scanner</Text>
+            <Text style={styles.subtitle}>Analyze installed apps and compare with Play Store versions</Text>
+        </View>
+
+          {/* Scan Button */}
+          <TouchableOpacity
+            style={[
+              styles.scanButton,
+              { backgroundColor: isScanning ? COLORS.warning : COLORS.primary }
+            ]}
+            onPress={startComprehensiveScan}
+            disabled={isScanning}
           >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#4CAF50" />
+            {isScanning ? (
+              <ActivityIndicator size="small" color={COLORS.textPrimary} />
             ) : (
-              <Ionicons name="refresh" size={20} color="#4CAF50" />
+              <Ionicons name="scan" size={SIZES.iconLg} color={COLORS.textPrimary} />
             )}
             <Text style={styles.scanButtonText}>
-              {isLoading ? 'Scanning...' : 'Scan'}
+              {isScanning ? 'Scanning Apps...' : 'Start App Scan'}
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {/* Security Summary */}
-        <SecuritySummary />
-
-        {/* App Monitoring Toggle */}
-        <View style={styles.monitoringContainer}>
-          <View style={styles.monitoringHeader}>
-            <Ionicons name="apps" size={20} color="#FFFFFF" />
-            <Text style={styles.monitoringTitle}>Real-time App Monitoring</Text>
+          {/* Progress */}
+          {isScanning && (
+            <View style={styles.progressContainer}>
+              <Text style={styles.progressText}>
+                Scanning: {currentApp}
+              </Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { 
+                      width: `${scanProgress}%`,
+                      backgroundColor: COLORS.primary
+                    }
+                  ]} 
+                />
           </View>
-          <Switch
-            value={appMonitoring}
-            onValueChange={setAppMonitoring}
-            trackColor={{ false: '#333', true: '#4CAF50' }}
-            thumbColor={appMonitoring ? '#FFFFFF' : '#757575'}
-          />
-        </View>
-
-        {/* Filters */}
-        <View style={styles.filtersContainer}>
-          <Text style={styles.filtersTitle}>Filter by Risk Level</Text>
-          <View style={styles.filtersList}>
-            {filters.map((filter) => (
-              <FilterButton key={filter.id} filter={filter} />
-            ))}
+              <Text style={styles.progressPercentage}>
+                {Math.round(scanProgress)}%
+              </Text>
           </View>
+          )}
+
+          {/* Results Grid */}
+          {scanResults.totalApps > 0 && renderResultsGrid()}
+
+          {/* Filter Buttons */}
+          <View style={styles.filtersContainer}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filtersContent}
+            >
+              {filterOptions.map(renderFilterButton)}
+            </ScrollView>
         </View>
 
         {/* Apps List */}
         <View style={styles.appsContainer}>
-          <View style={styles.appsHeader}>
             <Text style={styles.appsTitle}>
-              {isLoading ? 'Scanning Apps...' : `${filteredApps.length} Apps Found`}
+              Installed Apps ({getFilteredApps().length})
             </Text>
-            {!isLoading && selectedFilter !== 'all' && (
-              <TouchableOpacity onPress={() => setSelectedFilter('all')}>
-                <Text style={styles.clearFilterText}>Clear Filter</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4CAF50" />
-              <Text style={styles.loadingText}>Analyzing installed apps...</Text>
-              <Text style={styles.loadingSubText}>Checking versions and security risks</Text>
-            </View>
-          ) : filteredApps.length === 0 ? (
+            
+            <FlatList
+              data={getFilteredApps()}
+              keyExtractor={(item) => item.packageName}
+              renderItem={renderAppItem}
+              scrollEnabled={false}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ListEmptyComponent={() => (
             <View style={styles.emptyState}>
-              <Ionicons name="checkmark-circle" size={64} color="#4CAF50" />
-              <Text style={styles.emptyStateTitle}>
-                {selectedFilter === 'all' ? 'No Apps Found' : `No ${selectedFilter} Risk Apps`}
-              </Text>
-              <Text style={styles.emptyStateDescription}>
-                {selectedFilter === 'all' 
-                  ? 'Unable to scan installed apps' 
-                  : `No ${selectedFilter} risk apps detected. Your device is secure!`
-                }
+                  <Ionicons name="apps" size={SIZES.iconXxl} color={COLORS.textTertiary} />
+                  <Text style={styles.emptyText}>
+                    {isScanning ? 'Loading apps...' : 'No apps found matching the current filter'}
               </Text>
             </View>
-          ) : (
-            filteredApps.map((app) => (
-              <AppCard key={app.id} app={app} />
-            ))
-          )}
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            <TouchableOpacity style={styles.quickActionButton}>
-              <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
-              <Text style={styles.quickActionText}>Secure All Apps</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.quickActionButton}>
-              <Ionicons name="document-text" size={24} color="#2196F3" />
-              <Text style={styles.quickActionText}>Export Report</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.quickActionButton}>
-              <Ionicons name="notifications" size={24} color="#FF9800" />
-              <Text style={styles.quickActionText}>Set Alerts</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.quickActionButton}>
-              <Ionicons name="settings" size={24} color="#9C27B0" />
-              <Text style={styles.quickActionText}>Settings</Text>
-            </TouchableOpacity>
-          </View>
+              )}
+            />
         </View>
       </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -501,416 +525,207 @@ export default function AppMonitorScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: SIZES.lg,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingTop: SIZES.lg,
+    paddingBottom: SIZES.xl,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
   },
-  headerTitle: {
-    fontSize: 24,
+  title: {
+    fontSize: SIZES.fontSizeLarge,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: COLORS.textPrimary,
+    marginBottom: SIZES.sm,
+  },
+  subtitle: {
+    fontSize: SIZES.fontSizeLg,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   scanButton: {
+    paddingVertical: SIZES.lg,
+    paddingHorizontal: SIZES.lg,
+    borderRadius: SIZES.radiusMd,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    justifyContent: 'center',
+    marginBottom: SIZES.lg,
+    ...SHADOWS.medium,
   },
   scanButtonText: {
-    color: '#4CAF50',
-    marginLeft: 4,
+    color: COLORS.textPrimary,
+    fontSize: SIZES.fontSizeXl,
     fontWeight: 'bold',
+    marginLeft: SIZES.sm,
   },
-  monitoringContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 15,
-    borderRadius: 12,
+  progressContainer: {
+    backgroundColor: COLORS.surface,
+    padding: SIZES.lg,
+    borderRadius: SIZES.radiusMd,
+    marginBottom: SIZES.lg,
   },
-  monitoringHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  progressText: {
+    color: COLORS.textPrimary,
+    fontSize: SIZES.fontSizeMd,
+    marginBottom: SIZES.sm,
   },
-  monitoringTitle: {
-    fontSize: 16,
+  progressBar: {
+    height: 8,
+    backgroundColor: COLORS.borderLight,
+    borderRadius: SIZES.radiusXs,
+    marginBottom: SIZES.sm,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: SIZES.radiusXs,
+  },
+  progressPercentage: {
+    color: COLORS.primary,
+    fontSize: SIZES.fontSizeSm,
+    textAlign: 'right',
+  },
+  resultsContainer: {
+    backgroundColor: COLORS.surface,
+    padding: SIZES.lg,
+    borderRadius: SIZES.radiusMd,
+    marginBottom: SIZES.lg,
+  },
+  resultsTitle: {
+    color: COLORS.textPrimary,
+    fontSize: SIZES.fontSizeXl,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 10,
+    marginBottom: SIZES.lg,
   },
-  // Security Summary Styles
-  securitySummaryContainer: {
-    backgroundColor: '#1a1a1a',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 12,
-    padding: 15,
-  },
-  summaryHeader: {
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  summaryHeaderText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 8,
-  },
-  summarySubText: {
-    fontSize: 12,
-    color: '#B0B0B0',
-    marginTop: 4,
-  },
-  summaryCards: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 3,
-    alignItems: 'center',
-  },
-  highRiskCard: {
-    borderTopWidth: 3,
-    borderTopColor: '#F44336',
-  },
-  mediumRiskCard: {
-    borderTopWidth: 3,
-    borderTopColor: '#FF9800',
-  },
-  lowRiskCard: {
-    borderTopWidth: 3,
-    borderTopColor: '#4CAF50',
-  },
-  updateCard: {
-    borderTopWidth: 3,
-    borderTopColor: '#2196F3',
-  },
-  summaryNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 5,
-  },
-  summaryCardLabel: {
-    fontSize: 10,
-    color: '#B0B0B0',
-    marginTop: 2,
-  },
-  // Loading Styles
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    marginTop: 15,
-    fontWeight: '600',
-  },
-  loadingSubText: {
-    fontSize: 12,
-    color: '#B0B0B0',
-    marginTop: 5,
-  },
-  filtersContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  filtersTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 10,
-  },
-  filtersList: {
+  resultsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  resultItem: {
+    width: '48%',
+    backgroundColor: COLORS.borderLight,
+    padding: SIZES.lg,
+    borderRadius: SIZES.radiusSm,
+    alignItems: 'center',
+    marginBottom: SIZES.md,
+  },
+  resultNumber: {
+    fontSize: SIZES.fontSizeXxl,
+    fontWeight: 'bold',
+    color: COLORS.success,
+    marginBottom: SIZES.xs,
+  },
+  resultLabel: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.fontSizeSm,
+    textAlign: 'center',
+  },
+  filtersContainer: {
+    marginBottom: SIZES.lg,
+  },
+  filtersContent: {
+    paddingVertical: SIZES.sm,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    marginBottom: 10,
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SIZES.md,
+    paddingVertical: SIZES.sm,
+    borderRadius: SIZES.radiusSm,
+    marginRight: SIZES.sm,
   },
-  filterButtonActive: {
-    backgroundColor: '#4CAF50',
-  },
-  filterButtonText: {
-    color: '#757575',
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  filterButtonTextActive: {
-    color: '#FFFFFF',
+  filterText: {
+    color: COLORS.textSecondary,
+    fontSize: SIZES.fontSizeSm,
+    marginLeft: SIZES.xs,
   },
   appsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  appsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: SIZES.xl,
   },
   appsTitle: {
-    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontSize: SIZES.fontSizeXl,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    marginBottom: SIZES.lg,
   },
-  clearFilterText: {
-    fontSize: 14,
-    color: '#4CAF50',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 16,
-  },
-  emptyStateDescription: {
-    fontSize: 14,
-    color: '#B0B0B0',
-    textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 20,
-  },
-  appCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    borderLeftWidth: 4,
-  },
-  appHeader: {
+  appItem: {
+    backgroundColor: COLORS.surface,
+    padding: SIZES.lg,
+    borderRadius: SIZES.radiusMd,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+  },
+  appIcon: {
+    width: SIZES.iconXxl,
+    height: SIZES.iconXxl,
+    borderRadius: SIZES.radiusSm,
+    backgroundColor: COLORS.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SIZES.md,
+  },
+  appIconImage: {
+    width: SIZES.iconXxl,
+    height: SIZES.iconXxl,
+    borderRadius: SIZES.radiusSm,
   },
   appInfo: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  appDetails: {
-    marginLeft: 12,
     flex: 1,
   },
   appName: {
-    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontSize: SIZES.fontSizeLg,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: SIZES.xs,
   },
   appPackage: {
-    fontSize: 12,
-    color: '#B0B0B0',
-    marginBottom: 2,
+    color: COLORS.textSecondary,
+    fontSize: SIZES.fontSizeSm,
+    marginBottom: SIZES.sm,
   },
-  versionContainer: {
+  appMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
   },
   appVersion: {
-    fontSize: 10,
-    color: '#757575',
+    color: COLORS.textSecondary,
+    fontSize: SIZES.fontSizeSm,
+    marginRight: SIZES.md,
   },
-  updateAvailable: {
-    fontSize: 9,
-    color: '#FF9800',
-    marginLeft: 8,
-    fontWeight: 'bold',
-  },
-  appStatus: {
-    alignItems: 'flex-end',
-  },
-  riskBadge: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  updateBadge: {
+  issueTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
-  },
-  updateText: {
-    fontSize: 8,
-    color: '#FFFFFF',
-    marginLeft: 2,
-    fontWeight: 'bold',
-  },
-  // Security Issues Styles
-  securityIssues: {
-    backgroundColor: '#2a1a1a',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#F44336',
-  },
-  issuesTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#F44336',
-    marginBottom: 5,
+    backgroundColor: COLORS.borderLight,
+    paddingHorizontal: SIZES.sm,
+    paddingVertical: SIZES.xs,
+    borderRadius: SIZES.radiusXs,
+    marginRight: SIZES.sm,
   },
   issueText: {
-    fontSize: 11,
-    color: '#FFCCCC',
-    marginBottom: 2,
-    lineHeight: 16,
-  },
-  moreIssues: {
-    fontSize: 10,
-    color: '#FF9800',
-    fontStyle: 'italic',
-    marginTop: 2,
-  },
-  // App Stats Styles
-  appStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 10,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statText: {
-    fontSize: 10,
-    color: '#B0B0B0',
-    marginLeft: 4,
-  },
-  permissionsContainer: {
-    marginBottom: 12,
-  },
-  permissionsTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  permissionsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  permissionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#333',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  permissionText: {
-    fontSize: 10,
-    color: '#FFFFFF',
-    marginLeft: 4,
-  },
-  morePermissions: {
-    fontSize: 10,
-    color: '#4CAF50',
-    fontStyle: 'italic',
+    fontSize: SIZES.fontSizeXs,
+    marginLeft: SIZES.xs,
   },
   appActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    flex: 1,
-    marginHorizontal: 2,
     justifyContent: 'center',
-  },
-  revokeButton: {
-    backgroundColor: '#FF9800',
-  },
-  detailsButton: {
-    backgroundColor: '#2196F3',
-  },
-  uninstallButton: {
-    backgroundColor: '#F44336',
-  },
-  updateButton: {
-    backgroundColor: '#4CAF50',
-  },
-  actionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginLeft: 4,
-  },
-  quickActionsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  quickActionsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 15,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  quickActionButton: {
-    width: '48%',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 15,
     alignItems: 'center',
-    marginBottom: 10,
   },
-  quickActionText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    marginTop: 8,
+  separator: {
+    height: SIZES.sm,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: SIZES.xxl,
+  },
+  emptyText: {
+    color: COLORS.textTertiary,
+    fontSize: SIZES.fontSizeLg,
+    marginTop: SIZES.lg,
     textAlign: 'center',
   },
 }); 

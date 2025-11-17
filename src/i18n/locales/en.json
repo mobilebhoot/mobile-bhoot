@@ -13,7 +13,11 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Information",
-    "retry": "Retry"
+    "retry": "Retry",
+    "updated": "System Updated",
+    "refreshed": "Security status refreshed",
+    "failed": "Update Failed",
+    "tryAgain": "Please try again"
   },
   "navigation": {
     "dashboard": "Security Dashboard",
@@ -171,5 +175,98 @@
     "actionRequired": "Action Required",
     "dismiss": "Dismiss",
     "viewDetails": "View Details"
+  },
+  "deepScan": {
+    "title": "Full Filesystem Scan",
+    "subtitle": "Comprehensive file analysis with scoped storage compliance",
+    "startScan": "Start Full Scan",
+    "scanning": "Scanning...",
+    "processing": "Processing...",
+    "progress": "Scan Progress",
+    "liveResults": "Live Results",
+    "scanFlow": "Scan Flow",
+    "incrementalResume": "Incremental resume via Room DB cursor checkpoints",
+    "autoFix": "Auto-Fix Issues",
+    "completed": "Filesystem Scan Complete",
+    "failed": "Scan Failed",
+    "results": "Scanned {{filesScanned}} files, found {{threatsFound}} threats",
+    "tryAgain": "Please try again",
+    "filesScanned": "Files Scanned",
+    "threatsFound": "Threats Found", 
+    "archivesProcessed": "Archives Processed",
+    "hashesComputed": "Hashes Computed",
+    "yaraMatches": "YARA Matches",
+    "reputationChecks": "Reputation Checks",
+    "steps": {
+      "enumerate": {
+        "title": "Enumerate Files",
+        "description": "Scanning all accessible files via MediaStore and SAF"
+      },
+      "validate": {
+        "title": "Type/Size Validation", 
+        "description": "Validating file types and sizes for processing"
+      },
+      "unpack": {
+        "title": "Archive Unpacking",
+        "description": "Unpacking and analyzing archive files"
+      },
+      "hash": {
+        "title": "Hash Computation",
+        "description": "Computing SHA-256 hashes for all files"
+      },
+      "yara": {
+        "title": "YARA/Signature Match",
+        "description": "Running YARA rules and signature matching"
+      },
+      "reputation": {
+        "title": "Reputation Lookup", 
+        "description": "Checking file reputation against threat databases"
+      },
+      "action": {
+        "title": "Action & Logging",
+        "description": "Taking actions and logging results"
+      }
+    },
+    "compliance": {
+      "title": "Scoped Storage Compliance",
+      "description": "Uses targeted permissions with justified all-files access for comprehensive security analysis"
+    }
+  },
+  "appScan": {
+    "title": "App Security Scanner",
+    "subtitle": "Analyze installed apps and compare with Play Store versions",
+    "startScan": "Start App Scan",
+    "scanning": "Scanning Apps...",
+    "scanComplete": "App Scan Complete",
+    "scanFailed": "App Scan Failed",
+    "scanResults": "Scanned {{totalApps}} apps, found {{issues}} issues",
+    "loadFailed": "Failed to load apps",
+    "scanningApp": "Scanning",
+    "installedApps": "Installed Apps",
+    "totalApps": "Total Apps",
+    "outdatedApps": "Outdated Apps",
+    "securityIssues": "Security Issues",
+    "suspiciousApps": "Suspicious Apps",
+    "updateAvailable": "Update Available",
+    "suspicious": "Suspicious",
+    "currentVersion": "Current Version",
+    "latestVersion": "Latest Version",
+    "noIssuesFound": "No issues found with this app",
+    "updateApp": "Update App",
+    "openingPlayStore": "Opening Play Store",
+    "tooManyPermissions": "App requests too many permissions",
+    "outdatedVersion": "App version is outdated",
+    "unknownInstaller": "App installed from unknown source",
+    "suspiciousName": "App has suspicious package name",
+    "loading": "Loading apps...",
+    "noAppsFound": "No apps found matching the current filter",
+    "filters": {
+      "all": "All Apps",
+      "outdated": "Outdated",
+      "security": "Security Issues",
+      "suspicious": "Suspicious",
+      "system": "System Apps",
+      "user": "User Apps"
+    }
   }
 }

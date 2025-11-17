@@ -47,14 +47,14 @@ function TabNavigator() {
 
           if (route.name === 'Dashboard') {
             iconName = focused ? 'shield-checkmark' : 'shield-checkmark-outline';
-          } else if (route.name === 'Vulnerabilities') {
-            iconName = focused ? 'warning' : 'warning-outline';
+          } else if (route.name === 'Deep Scan') {
+            iconName = focused ? 'scan' : 'scan-outline';
+          } else if (route.name === 'App Scan') {
+            iconName = focused ? 'apps' : 'apps-outline';
+          } else if (route.name === 'URL Guard') {
+            iconName = focused ? 'shield' : 'shield-outline';
           } else if (route.name === 'Network') {
             iconName = focused ? 'globe' : 'globe-outline';
-          } else if (route.name === 'Link Scanner') {
-            iconName = focused ? 'link' : 'link-outline';
-          } else if (route.name === 'Apps') {
-            iconName = focused ? 'apps' : 'apps-outline';
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -88,24 +88,24 @@ function TabNavigator() {
         options={{ title: t('navigation.dashboard') }}
       />
       <Tab.Screen 
-        name="Vulnerabilities" 
+        name="Deep Scan" 
         component={VulnerabilityScreen}
-        options={{ title: t('navigation.vulnerabilities') }}
+        options={{ title: 'Deep Scan' }}
+      />
+      <Tab.Screen 
+        name="App Scan" 
+        component={AppMonitorScreen}
+        options={{ title: 'App Scan' }}
+      />
+      <Tab.Screen 
+        name="URL Guard" 
+        component={UltimateSecurityScreen}
+        options={{ title: 'URL Guard' }}
       />
       <Tab.Screen 
         name="Network" 
         component={NetworkTrafficScreen}
         options={{ title: t('navigation.network') }}
-      />
-      <Tab.Screen 
-        name="Link Scanner" 
-        component={UltimateSecurityScreen}
-        options={{ title: t('navigation.linkScanner') }}
-      />
-      <Tab.Screen 
-        name="Apps" 
-        component={AppMonitorScreen}
-        options={{ title: t('navigation.apps') }}
       />
       <Tab.Screen 
         name="Settings" 

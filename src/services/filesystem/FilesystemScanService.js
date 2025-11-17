@@ -760,4 +760,4 @@ class FilesystemScanService {
   }
 }
 
-export default new FilesystemScanService();
+export default FilesystemScanService;
