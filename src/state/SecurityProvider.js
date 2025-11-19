@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import { PermissionsAndroid, Platform } from 'react-native';
 import automaticScanService from '../services/automaticScanService';
 import vulnerabilityDetectionService from '../services/vulnerabilityDetectionService';
+import securityComplianceService from '../services/securityComplianceService';
 
 const SecurityContext = createContext();
 
@@ -147,6 +148,15 @@ export const SecurityProvider = ({ children }) => {
         deviceInfo,
       }));
 
+      // Initialize security compliance service
+      console.log('🔐 Initializing security compliance...');
+      try {
+        await securityComplianceService.initialize();
+        console.log('✅ Security compliance initialized');
+      } catch (error) {
+        console.error('⚠️ Security compliance initialization failed:', error);
+      }
+      
       // Initialize automatic scan service
       console.log('🔄 Setting up automatic security scanning...');
       

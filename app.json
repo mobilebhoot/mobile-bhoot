@@ -2,7 +2,7 @@
   "expo": {
     "name": "PocketShield",
     "slug": "pocketshield",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "scheme": "pocketshield",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "io.pocketshield.security",
-      "buildNumber": "1.0.0",
+      "buildNumber": "1.2.0",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "PocketShield.io needs location access for network security monitoring.",
         "NSCameraUsageDescription": "PocketShield.io needs camera access for QR code scanning.",
@@ -31,7 +31,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.pocketshieldio",
-      "versionCode": 1,
+      "versionCode": 3,
       "compileSdkVersion": 34,
       "targetSdkVersion": 34,
       "minSdkVersion": 21,

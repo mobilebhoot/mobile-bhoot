@@ -13,15 +13,22 @@
     "success": "విజయం",
     "warning": "హెచ్చరిక",
     "info": "సమాచారం",
-    "retry": "మళ్లీ ప్రయత్నించండి"
+    "retry": "మళ్లీ ప్రయత్నించండి",
+    "updated": "System Updated",
+    "refreshed": "Security status refreshed",
+    "failed": "Update Failed",
+    "tryAgain": "Please try again"
   },
   "navigation": {
     "dashboard": "భద్రతా డ్యాష్‌బోర్డ్",
-    "vulnerabilities": "దుర్బలత్వాలు",
+    "deepScan": "Deep Scan",
+    "appScan": "App Scan",
+    "urlGuard": "URL Guard",
     "network": "నెట్‌వర్క్ ట్రాఫిక్",
+    "settings": "సెట్టింగ్‌లు",
+    "vulnerabilities": "దుర్బలత్వాలు",
     "linkScanner": "లింక్ స్కానర్",
-    "apps": "యాప్ మానిటర్",
-    "settings": "సెట్టింగ్‌లు"
+    "apps": "యాప్ మానిటర్"
   },
   "auth": {
     "welcome": "పాకెట్‌షీల్డ్‌కు స్వాగతం",
@@ -49,11 +56,13 @@
     "nameRequired": "పేరు అవసరం",
     "nameRequiredMessage": "దయచేసి మీ పేరు నమోదు చేయండి.",
     "welcomeUser": "🎉 స్వాగతం!",
-    "welcomeUserMessage": "మీ ఖాతా విజయవంతంగా సృష్టించబడింది.",
+    "welcomeMessage": "{name}, Welcome to PocketShield!",
+    "continue": "Continue",
     "demoConfirm": "డెమో మోడ్",
     "demoConfirmMessage": "మీరు రిజిస్ట్రేషన్ లేకుండా డెమో వెర్షన్‌ను ప్రయత్నించాలనుకుంటున్నారా?",
     "cancel": "రద్దు చేయండి",
     "yesDemo": "అవును, డెమో ప్రయత్నించండి",
+    "welcomeUserMessage": "మీ ఖాతా విజయవంతంగా సృష్టించబడింది.",
     "login": "లాగిన్",
     "logout": "లాగ్అవుట్",
     "signUp": "సైన్ అప్",
@@ -150,6 +159,7 @@
     "languageChanged": "భాష విజయవంతంగా మార్చబడింది!",
     "languageChangeError": "భాష మార్చడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
     "appPreferences": "యాప్ ప్రాధాన్యతలు",
+    "languageAndRegion": "Language & Region",
     "notifications": "నోటిఫికేషన్‌లు",
     "security": "భద్రతా సెట్టింగ్‌లు",
     "privacy": "గోప్యత సెట్టింగ్‌లు",
@@ -160,7 +170,60 @@
     "shareApp": "యాప్‌ను షేర్ చేయండి",
     "autoScan": "ఆటో స్కాన్",
     "realTimeProtection": "రియల్-టైమ్ రక్షణ",
-    "dataCollection": "డేటా సేకరణ"
+    "dataCollection": "డేటా సేకరణ",
+    "monitoring": "Monitoring",
+    "securityCompliance": "Security Compliance",
+    "securityComplianceDesc": "View GDPR, CCPA compliance and security status",
+    "privacyPolicy": "Privacy Policy",
+    "privacyPolicyDesc": "Read our privacy policy",
+    "securityReport": "Security Report",
+    "securityReportDesc": "Download comprehensive security report",
+    "resetDefaults": "Reset to Defaults",
+    "resetDefaultsDesc": "Restore default security settings",
+    "profileSettings": "Profile Settings",
+    "profileSettingsDesc": "Manage your account profile",
+    "subscription": "Subscription",
+    "subscriptionDesc": "Manage your subscription",
+    "signOut": "Sign Out",
+    "signOutDesc": "Sign out of your account",
+    "signOutConfirm": "Sign Out",
+    "signOutConfirmMessage": "Are you sure you want to sign out?",
+    "demoInfo": "This is a demo version of the Mobile Security app. All security features are simulated for demonstration purposes.",
+    "autoScanDesc": "Automatically scan for vulnerabilities",
+    "backgroundMonitoring": "Background Monitoring",
+    "backgroundMonitoringDesc": "Monitor device activity in background",
+    "notificationsDesc": "Receive alerts for security threats",
+    "aiAnalysis": "AI Analysis",
+    "aiAnalysisDesc": "Enable AI-powered security insights",
+    "supportDesc": "Get help and contact support",
+    "rateAppDesc": "Rate us on the app store"
+  },
+  "networkMonitor": {
+    "title": "Network Dashboard",
+    "subtitle": "Real-time bandwidth monitoring",
+    "liveMonitoring": "Live Monitoring",
+    "monitoringStopped": "Monitoring Stopped",
+    "downloadSpeed": "Download",
+    "uploadSpeed": "Upload",
+    "totalUsage": "Total Usage",
+    "efficiency": "Efficiency",
+    "bandwidthUsageOverTime": "Bandwidth Usage Over Time",
+    "topAppsByDataUsage": "Top Apps by Data Usage",
+    "appUsageDistribution": "App Usage Distribution",
+    "installedAppsUsage": "📱 Installed Apps Usage",
+    "appsDetected": "apps detected",
+    "total": "Total",
+    "detectingInstalledApps": "Detecting installed apps...",
+    "showAllApps": "Show all",
+    "loadingNetworkData": "Initializing Network Monitor...",
+    "networkStats": "Network Statistics",
+    "connectionType": "Connection Type",
+    "isConnected": "Is Connected",
+    "isInternetReachable": "Internet Reachable",
+    "wifi": "WiFi",
+    "cellular": "Cellular",
+    "ethernet": "Ethernet",
+    "unknown": "Unknown"
   },
   "scanner": {
     "scanning": "స్కాన్ చేస్తోంది...",
@@ -177,5 +240,98 @@
     "actionRequired": "చర్య అవసరం",
     "dismiss": "తొలగించండి",
     "viewDetails": "వివరాలు చూడండి"
+  },
+  "deepScan": {
+    "title": "Full Filesystem Scan",
+    "subtitle": "Comprehensive file analysis with scoped storage compliance",
+    "startScan": "Start Full Scan",
+    "scanning": "Scanning...",
+    "processing": "Processing...",
+    "progress": "Scan Progress",
+    "liveResults": "Live Results",
+    "scanFlow": "Scan Flow",
+    "incrementalResume": "Incremental resume via Room DB cursor checkpoints",
+    "autoFix": "Auto-Fix Issues",
+    "completed": "Filesystem Scan Complete",
+    "failed": "Scan Failed",
+    "results": "Scanned {{filesScanned}} files, found {{threatsFound}} threats",
+    "tryAgain": "Please try again",
+    "filesScanned": "Files Scanned",
+    "threatsFound": "Threats Found",
+    "archivesProcessed": "Archives Processed",
+    "hashesComputed": "Hashes Computed",
+    "yaraMatches": "YARA Matches",
+    "reputationChecks": "Reputation Checks",
+    "steps": {
+      "enumerate": {
+        "title": "Enumerate Files",
+        "description": "Scanning all accessible files via MediaStore and SAF"
+      },
+      "validate": {
+        "title": "Type/Size Validation",
+        "description": "Validating file types and sizes for processing"
+      },
+      "unpack": {
+        "title": "Archive Unpacking",
+        "description": "Unpacking and analyzing archive files"
+      },
+      "hash": {
+        "title": "Hash Computation",
+        "description": "Computing SHA-256 hashes for all files"
+      },
+      "yara": {
+        "title": "YARA/Signature Match",
+        "description": "Running YARA rules and signature matching"
+      },
+      "reputation": {
+        "title": "Reputation Lookup",
+        "description": "Checking file reputation against threat databases"
+      },
+      "action": {
+        "title": "Action & Logging",
+        "description": "Taking actions and logging results"
+      }
+    },
+    "compliance": {
+      "title": "Scoped Storage Compliance",
+      "description": "Uses targeted permissions with justified all-files access for comprehensive security analysis"
+    }
+  },
+  "appScan": {
+    "title": "App Security Scanner",
+    "subtitle": "Analyze installed apps and compare with Play Store versions",
+    "startScan": "Start App Scan",
+    "scanning": "Scanning Apps...",
+    "scanComplete": "App Scan Complete",
+    "scanFailed": "App Scan Failed",
+    "scanResults": "Scanned {{totalApps}} apps, found {{issues}} issues",
+    "loadFailed": "Failed to load apps",
+    "scanningApp": "Scanning",
+    "installedApps": "Installed Apps",
+    "totalApps": "Total Apps",
+    "outdatedApps": "Outdated Apps",
+    "securityIssues": "Security Issues",
+    "suspiciousApps": "Suspicious Apps",
+    "updateAvailable": "Update Available",
+    "suspicious": "Suspicious",
+    "currentVersion": "Current Version",
+    "latestVersion": "Latest Version",
+    "noIssuesFound": "No issues found with this app",
+    "updateApp": "Update App",
+    "openingPlayStore": "Opening Play Store",
+    "tooManyPermissions": "App requests too many permissions",
+    "outdatedVersion": "App version is outdated",
+    "unknownInstaller": "App installed from unknown source",
+    "suspiciousName": "App has suspicious package name",
+    "loading": "Loading apps...",
+    "noAppsFound": "No apps found matching the current filter",
+    "filters": {
+      "all": "All Apps",
+      "outdated": "Outdated",
+      "security": "Security Issues",
+      "suspicious": "Suspicious",
+      "system": "System Apps",
+      "user": "User Apps"
+    }
   }
 }

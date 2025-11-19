@@ -40,31 +40,48 @@ const resources = {
   ne: { translation: ne }
 };
 
-const initI18n = async () => {
-  let savedLanguage = await AsyncStorage.getItem('language');
-  
-  if (!savedLanguage) {
-    // Detect device language and map to supported languages
-    const deviceLanguage = Localization.locale.split('-')[0];
-    savedLanguage = resources[deviceLanguage] ? deviceLanguage : 'en';
-  }
+// Detect device language - this is synchronous with proper null checks
+const deviceLocale = Localization.locale || Localization.locales?.[0] || 'en-US';
+const deviceLanguage = typeof deviceLocale === 'string' ? deviceLocale.split('-')[0] : 'en';
+const defaultLanguage = resources[deviceLanguage] ? deviceLanguage : 'en';
 
-  i18n
-    .use(initReactI18next)
-    .init({
-      compatibilityJSON: 'v3',
-      resources,
-      lng: savedLanguage,
-      fallbackLng: 'en',
-      interpolation: {
-        escapeValue: false,
-      },
-    });
-};
+// Initialize i18n synchronously with default language
+i18n
+  .use(initReactI18next)
+  .init({
+    compatibilityJSON: 'v3',
+    resources,
+    lng: defaultLanguage,
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: false, // Disable suspense to avoid async issues
+    },
+  });
+
+// Load saved language asynchronously after initialization
+AsyncStorage.getItem('language').then((savedLanguage) => {
+  if (savedLanguage && resources[savedLanguage] && savedLanguage !== i18n.language) {
+    i18n.changeLanguage(savedLanguage);
+  }
+}).catch(err => {
+  console.warn('Failed to load saved language:', err);
+});
 
 export const changeLanguage = async (languageCode) => {
-  await AsyncStorage.setItem('language', languageCode);
-  i18n.changeLanguage(languageCode);
+  try {
+    if (!resources[languageCode]) {
+      throw new Error(`Language ${languageCode} is not supported`);
+    }
+    await AsyncStorage.setItem('language', languageCode);
+    await i18n.changeLanguage(languageCode);
+    return true;
+  } catch (error) {
+    console.error('Failed to change language:', error);
+    throw error;
+  }
 };
 
 export const getCurrentLanguage = () => i18n.language;
@@ -87,7 +104,5 @@ export const getSupportedLanguages = () => [
   { code: 'sa', name: 'Sanskrit', nativeName: 'संस्कृत' },
   { code: 'ne', name: 'Nepali', nativeName: 'नेपाली' }
 ];
-
-initI18n();
 
 export default i18n;

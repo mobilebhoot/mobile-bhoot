@@ -12,6 +12,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 
 // Import screens
 import AuthenticationScreen from './src/screens/AuthenticationScreen';
@@ -28,6 +30,8 @@ import EnhancedQRScannerScreen from './src/screens/EnhancedQRScannerScreen';
 import FileSecurityScreen from './src/screens/FileSecurityScreen';
 import FilesystemScanScreen from './src/screens/FilesystemScanScreen';
 import BreachDetectionScreen from './src/screens/BreachDetectionScreen';
+import SecurityComplianceScreen from './src/screens/SecurityComplianceScreen';
+import PrivacyPolicyScreen from './src/screens/PrivacyPolicyScreen';
 
 // Import components
 import TabBarIcon from './src/components/TabBarIcon';
@@ -36,12 +40,56 @@ import { SecurityProvider } from './src/state/SecurityProvider';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Home button component for all screens - always goes to Dashboard
+const HomeButton = ({ navigation }) => {
+  const handleHome = () => {
+    // Navigate to Main stack and then to Dashboard tab
+    try {
+      // If we're in the Main navigator, navigate to Dashboard tab
+      navigation.navigate('Dashboard');
+    } catch (error) {
+      // If we're in a Stack screen, navigate to Main first, then Dashboard
+      try {
+        navigation.navigate('Main', { screen: 'Dashboard' });
+      } catch (err) {
+        console.warn('Navigation to home failed:', err);
+      }
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handleHome}
+      style={{
+        marginLeft: 15,
+        padding: 5,
+      }}
+    >
+      <Ionicons name="home" size={24} color="#fff" />
+    </TouchableOpacity>
+  );
+};
+
 function TabNavigator() {
   const { t } = useTranslation();
   
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={({ route, navigation }) => {
+        // Get translated title for each route
+        const getTitle = (routeName) => {
+          switch (routeName) {
+            case 'Dashboard': return t('navigation.dashboard');
+            case 'Deep Scan': return t('navigation.deepScan');
+            case 'App Scan': return t('navigation.appScan');
+            case 'URL Guard': return t('navigation.urlGuard');
+            case 'Network': return t('navigation.network');
+            case 'Settings': return t('navigation.settings');
+            default: return routeName;
+          }
+        };
+
+        return {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
@@ -80,37 +128,34 @@ function TabNavigator() {
         headerTitleStyle: {
           fontWeight: 'bold',
         },
-      })}
+        headerLeft: (props) => <HomeButton navigation={navigation} />,
+        title: getTitle(route.name),
+      };
+      }}
     >
       <Tab.Screen 
         name="Dashboard" 
         component={DashboardScreen}
-        options={{ title: 'Dashboard' }}
       />
       <Tab.Screen 
         name="Deep Scan" 
         component={VulnerabilityScreen}
-        options={{ title: 'Deep Scan' }}
       />
       <Tab.Screen 
         name="App Scan" 
         component={AppMonitorScreen}
-        options={{ title: 'App Scan' }}
       />
       <Tab.Screen 
         name="URL Guard" 
         component={UltimateSecurityScreen}
-        options={{ title: 'URL Guard' }}
       />
       <Tab.Screen 
         name="Network" 
         component={NetworkTrafficScreen}
-        options={{ title: 'Network Monitor' }}
       />
       <Tab.Screen 
         name="Settings" 
         component={SettingsScreen}
-        options={{ title: 'Settings' }}
       />
     </Tab.Navigator>
   );
@@ -124,7 +169,7 @@ export default function App() {
           <NavigationContainer>
             <Stack.Navigator
               initialRouteName="Auth"
-              screenOptions={{
+              screenOptions={({ navigation }) => ({
                 headerStyle: {
                   backgroundColor: '#1a1a2e',
                   borderBottomColor: '#333',
@@ -134,7 +179,8 @@ export default function App() {
                 headerTitleStyle: {
                   fontWeight: 'bold',
                 },
-              }}
+                headerLeft: (props) => <HomeButton navigation={navigation} />,
+              })}
             >
               <Stack.Screen 
                 name="Auth" 
@@ -185,6 +231,16 @@ export default function App() {
                 name="EnhancedQRScanner" 
                 component={EnhancedQRScannerScreen}
                 options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="SecurityCompliance" 
+                component={SecurityComplianceScreen}
+                options={{ title: 'Security Compliance' }}
+              />
+              <Stack.Screen 
+                name="PrivacyPolicy" 
+                component={PrivacyPolicyScreen}
+                options={{ title: 'Privacy Policy' }}
               />
             </Stack.Navigator>
           </NavigationContainer>

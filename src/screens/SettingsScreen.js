@@ -27,15 +27,15 @@ export default function SettingsScreen({ navigation }) {
 
   const handleLogout = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      t('settings.signOutConfirm') || 'Sign Out',
+      t('settings.signOutConfirmMessage') || 'Are you sure you want to sign out?',
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel') || 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Sign Out',
+          text: t('settings.signOut') || 'Sign Out',
           style: 'destructive',
           onPress: () => {
             // Navigate back to auth screen
@@ -94,34 +94,41 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         </View>
 
+        {/* Language & Region - Prominently Displayed at Top */}
+        {renderSection(t('settings.languageAndRegion') || '🌐 Language & Region', (
+          <>
+            <LanguageSelector />
+          </>
+        ))}
+
         {/* Monitoring Settings */}
-        {renderSection('Monitoring', (
+        {renderSection(t('settings.monitoring') || 'Monitoring', (
           <>
             {renderSettingItem(
               'shield-checkmark',
-              'Auto Security Scan',
-              'Automatically scan for vulnerabilities',
+              t('settings.autoScan') || 'Auto Security Scan',
+              t('settings.autoScanDesc') || 'Automatically scan for vulnerabilities',
               'toggle',
               'autoScan'
             )}
             {renderSettingItem(
               'eye',
-              'Background Monitoring',
-              'Monitor device activity in background',
+              t('settings.backgroundMonitoring') || 'Background Monitoring',
+              t('settings.backgroundMonitoringDesc') || 'Monitor device activity in background',
               'toggle',
               'backgroundMonitoring'
             )}
             {renderSettingItem(
               'notifications',
-              'Security Notifications',
-              'Receive alerts for security threats',
+              t('settings.notifications') || 'Security Notifications',
+              t('settings.notificationsDesc') || 'Receive alerts for security threats',
               'toggle',
               'notifications'
             )}
             {renderSettingItem(
               'analytics',
-              'AI Analysis',
-              'Enable AI-powered security insights',
+              t('settings.aiAnalysis') || 'AI Analysis',
+              t('settings.aiAnalysisDesc') || 'Enable AI-powered security insights',
               'toggle',
               'aiAnalysis'
             )}
@@ -129,27 +136,27 @@ export default function SettingsScreen({ navigation }) {
         ))}
 
         {/* Privacy Settings */}
-        {renderSection('Privacy', (
+        {renderSection(t('settings.privacy') || 'Privacy', (
           <>
             {renderSettingItem(
               'lock-closed',
-              'Data Retention',
-              `${localSettings.dataRetention} days`,
+              t('settings.dataRetention') || 'Data Retention',
+              `${localSettings.dataRetention} ${t('settings.days') || 'days'}`,
               'arrow',
               null,
-              () => Alert.alert('Data Retention', 'Configure how long to keep security data')
+              () => Alert.alert(t('settings.dataRetention') || 'Data Retention', t('settings.dataRetentionDesc') || 'Configure how long to keep security data')
             )}
             {renderSettingItem(
               'eye-off',
-              'Privacy Mode',
-              'Hide sensitive information',
+              t('settings.privacyMode') || 'Privacy Mode',
+              t('settings.privacyModeDesc') || 'Hide sensitive information',
               'toggle',
               'privacyMode'
             )}
             {renderSettingItem(
               'cloud-upload',
-              'Cloud Backup',
-              'Backup security data to cloud',
+              t('settings.cloudBackup') || 'Cloud Backup',
+              t('settings.cloudBackupDesc') || 'Backup security data to cloud',
               'toggle',
               'cloudBackup'
             )}
@@ -157,26 +164,26 @@ export default function SettingsScreen({ navigation }) {
         ))}
 
         {/* Security Configuration */}
-        {renderSection('Security Configuration', (
+        {renderSection(t('settings.security') || 'Security Configuration', (
           <>
             {renderSettingItem(
               'finger-print',
-              'Biometric Authentication',
-              'Use fingerprint or face ID',
+              t('settings.biometricAuth') || 'Biometric Authentication',
+              t('settings.biometricAuthDesc') || 'Use fingerprint or face ID',
               'toggle',
               'biometricAuth'
             )}
             {renderSettingItem(
               'key',
-              'Encryption',
-              'Encrypt stored security data',
+              t('settings.encryption') || 'Encryption',
+              t('settings.encryptionDesc') || 'Encrypt stored security data',
               'toggle',
               'encryption'
             )}
             {renderSettingItem(
               'shield',
-              'VPN Integration',
-              'Connect to VPN for enhanced security',
+              t('settings.vpnIntegration') || 'VPN Integration',
+              t('settings.vpnIntegrationDesc') || 'Connect to VPN for enhanced security',
               'toggle',
               'vpnIntegration'
             )}
@@ -184,39 +191,40 @@ export default function SettingsScreen({ navigation }) {
         ))}
 
         {/* Data Management */}
-        {renderSection('Data Management', (
+        {renderSection(t('settings.dataManagement') || 'Data Management', (
           <>
             {renderSettingItem(
               'trash',
-              'Clear Security Data',
-              'Delete all stored security information',
+              t('settings.clearSecurityData') || 'Clear Security Data',
+              t('settings.clearSecurityDataDesc') || 'Delete all stored security information',
               'arrow',
               null,
-              () => Alert.alert('Clear Data', 'This will delete all security scan history and settings')
+              () => Alert.alert(t('settings.clearSecurityData') || 'Clear Data', t('settings.clearSecurityDataDesc') || 'This will delete all security scan history and settings')
             )}
             {renderSettingItem(
               'download',
-              'Export Security Report',
-              'Download comprehensive security report',
+              t('settings.securityReport') || 'Export Security Report',
+              t('settings.securityReportDesc') || 'Download comprehensive security report',
               'arrow',
               null,
               () => navigation.navigate('SecurityReport')
             )}
             {renderSettingItem(
-              'refresh',
-              'Reset to Defaults',
-              'Restore default security settings',
+              'shield-checkmark',
+              t('settings.securityCompliance') || 'Security Compliance',
+              t('settings.securityComplianceDesc') || 'View GDPR, CCPA compliance and security status',
               'arrow',
               null,
-              () => Alert.alert('Reset Settings', 'This will restore all settings to their default values')
+              () => navigation.navigate('SecurityCompliance')
             )}
-          </>
-        ))}
-
-        {/* App Preferences */}
-        {renderSection('🌐 Language & Region', (
-          <>
-            <LanguageSelector />
+            {renderSettingItem(
+              'refresh',
+              t('settings.resetDefaults') || 'Reset to Defaults',
+              t('settings.resetDefaultsDesc') || 'Restore default security settings',
+              'arrow',
+              null,
+              () => Alert.alert(t('settings.resetDefaults') || 'Reset Settings', t('settings.resetDefaultsDesc') || 'This will restore all settings to their default values')
+            )}
           </>
         ))}
 
@@ -226,59 +234,59 @@ export default function SettingsScreen({ navigation }) {
             {renderSettingItem(
               'information-circle',
               t('settings.version') || 'App Version',
-              '1.0.0',
+              '1.2.0',
               'info'
             )}
             {renderSettingItem(
               'document-text',
-              'Privacy Policy',
-              'Read our privacy policy',
+              t('settings.privacyPolicy') || 'Privacy Policy',
+              t('settings.privacyPolicyDesc') || 'Read our privacy policy',
               'arrow',
               null,
-              () => Alert.alert('Privacy Policy', 'Privacy policy content would be displayed here')
+              () => navigation.navigate('PrivacyPolicy')
             )}
             {renderSettingItem(
               'help-circle',
               t('settings.support') || 'Help & Support',
-              'Get help and contact support',
+              t('settings.supportDesc') || 'Get help and contact support',
               'arrow',
               null,
-              () => Alert.alert('Help & Support', 'Support information would be displayed here')
+              () => Alert.alert(t('settings.support') || 'Help & Support', t('settings.supportDesc') || 'Support information would be displayed here')
             )}
             {renderSettingItem(
               'star',
               t('settings.rateApp') || 'Rate App',
-              'Rate us on the app store',
+              t('settings.rateAppDesc') || 'Rate us on the app store',
               'arrow',
               null,
-              () => Alert.alert('Rate App', 'This would open the app store rating page')
+              () => Alert.alert(t('settings.rateApp') || 'Rate App', t('settings.rateAppDesc') || 'This would open the app store rating page')
             )}
           </>
         ))}
 
         {/* Account */}
-        {renderSection('Account', (
+        {renderSection(t('settings.account') || 'Account', (
           <>
             {renderSettingItem(
               'person',
-              'Profile Settings',
-              'Manage your account profile',
+              t('settings.profileSettings') || 'Profile Settings',
+              t('settings.profileSettingsDesc') || 'Manage your account profile',
               'arrow',
               null,
-              () => Alert.alert('Profile Settings', 'Profile management would be available here')
+              () => Alert.alert(t('settings.profileSettings') || 'Profile Settings', t('settings.profileSettingsDesc') || 'Profile management would be available here')
             )}
             {renderSettingItem(
               'card',
-              'Subscription',
-              'Manage your subscription',
+              t('settings.subscription') || 'Subscription',
+              t('settings.subscriptionDesc') || 'Manage your subscription',
               'arrow',
               null,
-              () => Alert.alert('Subscription', 'Subscription management would be available here')
+              () => Alert.alert(t('settings.subscription') || 'Subscription', t('settings.subscriptionDesc') || 'Subscription management would be available here')
             )}
             {renderSettingItem(
               'log-out',
-              'Sign Out',
-              'Sign out of your account',
+              t('settings.signOut') || 'Sign Out',
+              t('settings.signOutDesc') || 'Sign out of your account',
               'arrow',
               null,
               handleLogout
@@ -289,8 +297,7 @@ export default function SettingsScreen({ navigation }) {
         {/* Demo Info */}
         <View style={styles.demoInfo}>
           <Text style={styles.demoInfoText}>
-            This is a demo version of the Mobile Security app. 
-            All security features are simulated for demonstration purposes.
+            {t('settings.demoInfo') || 'This is a demo version of the Mobile Security app. All security features are simulated for demonstration purposes.'}
           </Text>
         </View>
       </ScrollView>

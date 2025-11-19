@@ -44,14 +44,25 @@ export default function LanguageSelector() {
 
   const changeLanguage = async (langCode) => {
     try {
+      // Use the changeLanguage function from i18n.js which handles AsyncStorage
       await i18n.changeLanguage(langCode);
       await AsyncStorage.setItem('language', langCode);
       setCurrentLanguage(langCode);
       setModalVisible(false);
-      Alert.alert(t('common.success'), t('settings.languageChanged'));
+      
+      // Force a small delay to ensure state updates
+      setTimeout(() => {
+        Alert.alert(
+          t('common.success') || 'Success', 
+          t('settings.languageChanged') || 'Language changed successfully!'
+        );
+      }, 100);
     } catch (error) {
       console.error('Failed to change language:', error);
-      Alert.alert(t('common.error'), t('settings.languageChangeError'));
+      Alert.alert(
+        t('common.error') || 'Error', 
+        t('settings.languageChangeError') || 'Failed to change language. Please try again.'
+      );
     }
   };
 

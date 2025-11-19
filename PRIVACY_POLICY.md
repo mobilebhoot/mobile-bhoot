@@ -1,7 +1,7 @@
 # Privacy Policy for PocketShield
 
-**Effective Date:** October 11, 2025  
-**Last Updated:** October 11, 2025
+**Effective Date:** November 18, 2024  
+**Last Updated:** November 18, 2024
 
 ## 1. Introduction
 
@@ -141,13 +141,14 @@ Changes become effective immediately upon posting.
 
 If you have any questions about this Privacy Policy or our privacy practices, please contact us:
 
-**Email**: privacy@pocketshield.com  
-**Website**: https://pocketshield.com/contact  
-**Address**: PocketShield, Inc.  
-Privacy Department  
-[Your Business Address]  
+**Email**: privacy@pocketshield.io  
+**Website**: https://pocketshield.io/privacy  
 
-**Data Protection Officer**: dpo@pocketshield.com
+**Data Protection Officer**: privacy@pocketshield.io
+
+You can also exercise your privacy rights directly through the app:
+- Go to **Settings → Security Compliance** to export or delete your data
+- Use the **Privacy Policy** screen in Settings to review our policy
 
 ## 12. Consent
 
@@ -155,4 +156,33 @@ By using PocketShield, you consent to the collection, use, and processing of you
 
 ---
 
-**This Privacy Policy is effective as of October 11, 2025.**
+**This Privacy Policy is effective as of November 18, 2024.**
+
+---
+
+## How to Exercise Your Privacy Rights
+
+### Through the App
+
+1. **Export Your Data (GDPR Right to Access)**
+   - Go to Settings → Security Compliance
+   - Tap "Export Your Data"
+   - Receive your data in portable format
+
+2. **Delete Your Data (GDPR Right to Erasure)**
+   - Go to Settings → Security Compliance
+   - Tap "Delete All Data"
+   - Confirm deletion to permanently remove all data
+
+3. **View Privacy Policy**
+   - Go to Settings → Privacy Policy
+   - Review complete privacy policy
+   - Accept or review acceptance status
+
+### Through Email
+
+Contact us at **privacy@pocketshield.io** for:
+- Data access requests
+- Data deletion requests
+- Privacy questions or concerns
+- Policy updates and notifications
