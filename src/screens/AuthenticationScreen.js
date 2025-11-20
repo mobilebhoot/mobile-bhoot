@@ -43,9 +43,9 @@ export default function AuthenticationScreen({ navigation }) {
 
   // Google Authentication Configuration
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: '1050104985553-24kvh48331qqrvotuasmj3qr9fhf6mmf.apps.googleusercontent.com', // Replace with your Google Client ID
-    iosClientId: '1050104985553-24kvh48331qqrvotuasmj3qr9fhf6mmf.apps.googleusercontent.com', // Replace with iOS Client ID
-    androidClientId: '1050104985553-24kvh48331qqrvotuasmj3qr9fhf6mmf.apps.googleusercontent.com', // Replace with Android Client ID
+    clientId: '133932633311-3q2a81jf7qijsqklh7mbgpbhtv7h7rkc.apps.googleusercontent.com',
+    iosClientId: '133932633311-3q2a81jf7qijsqklh7mbgpbhtv7h7rkc.apps.googleusercontent.com',
+    androidClientId: '133932633311-3q2a81jf7qijsqklh7mbgpbhtv7h7rkc.apps.googleusercontent.com',
     scopes: ['profile', 'email'],
   });
 
