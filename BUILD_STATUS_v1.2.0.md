@@ -129,3 +129,4 @@ If the build encounters issues:
 ---
 
 **PocketShield v1.2.0 - Building the Future of Mobile Security 🛡️**
+

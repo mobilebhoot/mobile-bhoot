@@ -188,3 +188,4 @@ All 16 Indian languages + English are now working:
 - Sanskrit (sa) - संस्कृत
 - Nepali (ne) - नेपाली
 
+

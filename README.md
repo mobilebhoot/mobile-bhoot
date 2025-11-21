@@ -639,10 +639,10 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 📞 **Support & Contact**
 
-- 📧 **Email:** support@pocketshield.com
-- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/your-username/mobile-bhoot/issues)
+- 📧 **Email:** support@pocketshield.io
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/pocketshield/pocketshield/issues)
 - 💬 **Community:** [Discord Server](https://discord.gg/pocketshield)
-- 📚 **Documentation:** [Wiki](https://github.com/your-username/mobile-bhoot/wiki)
+- 📚 **Documentation:** [Wiki](https://github.com/pocketshield/pocketshield/wiki)
 - 🐦 **Updates:** [@PocketShield](https://twitter.com/pocketshield)
 
 ---

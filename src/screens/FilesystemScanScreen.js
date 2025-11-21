@@ -113,8 +113,9 @@ export default function FilesystemScanScreen({ navigation }) {
       const result = await FilesystemScanService.startFullScan({
         scanType: 'full',
         includeMediaStore: true,
-        includeSAF: false,
+        includeSAF: false, // Skip SAF picker for automatic scanning
         includeAppFiles: true,
+        requestSAF: false, // Ensure no SAF picker is shown
         maxFiles: 5000, // Limit for demo
         onProgress: (progress) => {
           setScanProgress(progress);

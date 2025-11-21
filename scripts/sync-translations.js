@@ -134,3 +134,4 @@ console.log('   1. Review translation files in src/i18n/locales/');
 console.log('   2. Translate English placeholder text to respective languages');
 console.log('   3. Run this script again after adding translations to preserve them');
 console.log('\n💡 Tip: Use translation services or native speakers for accurate translations');
+

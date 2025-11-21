@@ -1,9 +1,21 @@
 // Real-Time File Monitoring Service - Automatic Download Security
 import { Platform, Alert, DeviceEventEmitter } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import fileSecurityService from './fileSecurityService';
+
+// Check if running in Expo Go - expo-notifications removed from Expo Go SDK 53+
+const isExpoGo = Constants.appOwnership === 'expo';
+let Notifications = null;
+
+if (!isExpoGo) {
+  try {
+    Notifications = require('expo-notifications');
+  } catch (e) {
+    // Notifications not available - will continue without push notifications
+  }
+}
 
 class FileMonitoringService {
   constructor() {
@@ -411,7 +423,9 @@ class FileMonitoringService {
 
   // Show notification
   async showNotification(title, body, category = 'general', highPriority = false) {
-    if (!this.config.notificationsEnabled) return;
+    if (!this.config.notificationsEnabled || !Notifications || typeof Notifications.scheduleNotificationAsync !== 'function') {
+      return;
+    }
 
     try {
       await Notifications.scheduleNotificationAsync({
@@ -421,8 +435,8 @@ class FileMonitoringService {
           data: { category: category },
           sound: true,
           priority: highPriority ? 
-            Notifications.AndroidNotificationPriority.MAX : 
-            Notifications.AndroidNotificationPriority.DEFAULT,
+            Notifications.AndroidNotificationPriority?.MAX || 'max' : 
+            Notifications.AndroidNotificationPriority?.DEFAULT || 'default',
         },
         trigger: null, // Show immediately
       });
@@ -433,6 +447,12 @@ class FileMonitoringService {
 
   // Setup notification system
   async setupNotifications() {
+    // Skip if notifications not available (Expo Go or missing module)
+    if (!Notifications || typeof Notifications.requestPermissionsAsync !== 'function') {
+      console.log('Notifications not available (Expo Go) - skipping notification setup');
+      return false;
+    }
+
     try {
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
@@ -440,13 +460,15 @@ class FileMonitoringService {
         return false;
       }
 
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
-        }),
-      });
+      if (typeof Notifications.setNotificationHandler === 'function') {
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+      }
 
       return true;
     } catch (error) {

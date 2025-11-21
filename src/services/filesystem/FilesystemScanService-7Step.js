@@ -81,3 +81,4 @@ async stopSevenStepScan() {
   
   return { stopped: false, reason: 'No active scan' };
 }
+

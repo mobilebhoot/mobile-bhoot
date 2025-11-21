@@ -162,3 +162,4 @@
 - **Issues:** Report bugs via the app's Settings → Feedback
 
 **Thank you for using PocketShield v1.2.0! Your device security is our priority. 🛡️✨**
+

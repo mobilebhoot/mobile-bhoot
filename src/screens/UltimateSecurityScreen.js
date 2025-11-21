@@ -20,6 +20,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { PieChart } from 'react-native-chart-kit';
 import { useTranslation } from 'react-i18next';
+import * as Linking from 'expo-linking';
+import Toast from 'react-native-toast-message';
 import bulkUrlScanner from '../services/bulkUrlScanner';
 import messageMonitoringService from '../services/messageMonitoringService';
 import enhancedQRScannerService from '../services/enhancedQRScannerService';
@@ -69,6 +71,7 @@ export default function UltimateSecurityScreen({ navigation }) {
   useEffect(() => {
     initializeServices();
     startRealTimeUpdates();
+    setupLinkInterception();
     
     return () => {
       if (threatUpdateInterval.current) {
@@ -76,6 +79,85 @@ export default function UltimateSecurityScreen({ navigation }) {
       }
     };
   }, []);
+
+  // Setup automatic link interception for phishing protection
+  const setupLinkInterception = async () => {
+    try {
+      // Handle deep links when app is opened from a link (cold start)
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        console.log('🔗 App opened with URL:', initialUrl);
+        await handleIncomingLink(initialUrl);
+      }
+
+      // Handle deep links when app is already running (warm start)
+      const subscription = Linking.addEventListener('url', (event) => {
+        console.log('🔗 Received URL while app running:', event.url);
+        handleIncomingLink(event.url);
+      });
+
+      console.log('✅ Automatic link interception enabled');
+      
+      return () => {
+        subscription.remove();
+      };
+    } catch (error) {
+      console.error('❌ Failed to setup link interception:', error);
+    }
+  };
+
+  // Handle incoming links (from email, SMS, social media, etc.)
+  const handleIncomingLink = async (url) => {
+    try {
+      // Extract the actual URL if it's a deep link
+      let urlToScan = url;
+      
+      // Parse deep link format: pocketshield://scan?url=https://example.com
+      if (url.startsWith('pocketshield://')) {
+        const parsed = Linking.parse(url);
+        urlToScan = parsed.queryParams?.url || url;
+      }
+      
+      // Extract HTTP/HTTPS URLs
+      const urlMatch = urlToScan.match(/(https?:\/\/[^\s]+)/);
+      if (urlMatch) {
+        urlToScan = urlMatch[1];
+      }
+
+      // Validate it's a real URL
+      if (!urlToScan.startsWith('http://') && !urlToScan.startsWith('https://')) {
+        console.log('⚠️ Not a valid HTTP/HTTPS URL, skipping scan');
+        return;
+      }
+
+      console.log('🔍 Automatically scanning URL:', urlToScan);
+
+      // Show notification that we're scanning
+      Toast.show({
+        type: 'info',
+        text1: '🔍 Scanning Link',
+        text2: 'Checking for phishing threats...',
+        position: 'top',
+        visibilityTime: 2000,
+      });
+
+      // Switch to scanner tab and set the URL
+      setActiveTab('scanner');
+      setInputText(urlToScan);
+
+      // Automatically scan the URL
+      await handleScanSingle(urlToScan);
+
+    } catch (error) {
+      console.error('❌ Error handling incoming link:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Scan Failed',
+        text2: 'Could not scan the received link',
+        position: 'top',
+      });
+    }
+  };
 
   const initializeServices = async () => {
     setIsLoading(true);

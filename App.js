@@ -109,6 +109,7 @@ function TabNavigator() {
 
           return <TabBarIcon name={iconName} size={size} color={color} />;
         },
+        tabBarLabel: getTitle(route.name), // Add translated tab label
         tabBarActiveTintColor: '#4CAF50',
         tabBarInactiveTintColor: '#888',
         tabBarStyle: {

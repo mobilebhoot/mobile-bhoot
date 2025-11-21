@@ -481,10 +481,12 @@ class AppSecurityService {
     const suspiciousPatterns = [];
 
     // Check for apps with suspicious names
-    const suspiciousNames = ['free', 'crack', 'hack', 'mod', 'unlimited', 'premium'];
-    const appNameLower = app.name.toLowerCase();
-    if (suspiciousNames.some(pattern => appNameLower.includes(pattern))) {
-      suspiciousPatterns.push('App name contains suspicious keywords');
+    if (app.name && typeof app.name === 'string') {
+      const suspiciousNames = ['free', 'crack', 'hack', 'mod', 'unlimited', 'premium'];
+      const appNameLower = app.name.toLowerCase();
+      if (suspiciousNames.some(pattern => appNameLower.includes(pattern))) {
+        suspiciousPatterns.push('App name contains suspicious keywords');
+      }
     }
 
     // Check for apps requesting excessive permissions
@@ -566,12 +568,13 @@ class AppSecurityService {
       recommendations: []
     };
 
-    const highRiskPermissions = permissions.filter(p => 
-      this.criticalPermissions.has(`android.permission.${p.toUpperCase()}`) || 
-      p.toLowerCase().includes('phone') || 
-      p.toLowerCase().includes('sms') ||
-      p.toLowerCase().includes('contacts')
-    );
+    const highRiskPermissions = permissions.filter(p => {
+      if (!p || typeof p !== 'string') return false;
+      return this.criticalPermissions.has(`android.permission.${p.toUpperCase()}`) || 
+        p.toLowerCase().includes('phone') || 
+        p.toLowerCase().includes('sms') ||
+        p.toLowerCase().includes('contacts');
+    });
 
     if (highRiskPermissions.length > 0) {
       result.score += highRiskPermissions.length * 5;

@@ -263,3 +263,4 @@ Then click "Continue with Google" and see if it works! 🚀
 
 If you get any errors, check the console logs and refer to the "Common Issues & Fixes" section above.
 
+

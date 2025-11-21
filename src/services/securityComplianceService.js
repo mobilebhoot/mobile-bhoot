@@ -638,3 +638,4 @@ class SecurityComplianceService {
 
 // Export singleton instance
 export default new SecurityComplianceService();
+

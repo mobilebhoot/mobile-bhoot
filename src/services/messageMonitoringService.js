@@ -2,8 +2,20 @@
 import { Platform, PermissionsAndroid, DeviceEventEmitter } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SMS from 'expo-sms';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import bulkUrlScanner from './bulkUrlScanner';
+
+// Check if running in Expo Go - expo-notifications removed from Expo Go SDK 53+
+const isExpoGo = Constants.appOwnership === 'expo';
+let Notifications = null;
+
+if (!isExpoGo) {
+  try {
+    Notifications = require('expo-notifications');
+  } catch (e) {
+    // Notifications not available - will continue without push notifications
+  }
+}
 
 class MessageMonitoringService {
   constructor() {
@@ -299,6 +311,11 @@ class MessageMonitoringService {
 
   // Show threat notification
   async showThreatNotification(threatAlert) {
+    if (!Notifications || typeof Notifications.scheduleNotificationAsync !== 'function') {
+      console.log('Notifications not available - threat alert:', threatAlert);
+      return;
+    }
+    
     try {
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -306,7 +323,7 @@ class MessageMonitoringService {
           body: `Found ${threatAlert.threats.length} malicious link${threatAlert.threats.length > 1 ? 's' : ''} in ${threatAlert.source} message`,
           data: { threatId: threatAlert.id },
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
+          priority: Notifications.AndroidNotificationPriority?.HIGH || 'high',
         },
         trigger: null, // Show immediately
       });
@@ -331,6 +348,12 @@ class MessageMonitoringService {
 
   // Setup notification system
   async setupNotifications() {
+    // Skip if notifications not available (Expo Go or missing module)
+    if (!Notifications || typeof Notifications.requestPermissionsAsync !== 'function') {
+      console.log('Notifications not available in Expo Go - use development build for notifications');
+      return false;
+    }
+    
     try {
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') {
@@ -338,13 +361,15 @@ class MessageMonitoringService {
         return false;
       }
 
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
-        }),
-      });
+      if (typeof Notifications.setNotificationHandler === 'function') {
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+      }
 
       return true;
     } catch (error) {

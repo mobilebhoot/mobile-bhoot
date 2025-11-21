@@ -41,7 +41,16 @@
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
         "WAKE_LOCK",
-        "CAMERA"
+        "CAMERA",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ],
       "permissionsExplanation": {
         "INTERNET": "Required for threat intelligence updates and backend API communication",
@@ -53,7 +62,7 @@
       },
       "blocksBackgroundLocationAccess": true,
       "playStoreConfig": {
-        "dataPolicy": "https://pocketshield.com/privacy-policy",
+        "dataPolicy": "https://pocketshield.io/privacy",
         "category": "PRODUCTIVITY",
         "inAppUpdates": true
       },
@@ -130,10 +139,10 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "131dcf70-b150-4941-860e-7dbe0e901efb"
+        "projectId": "3fdbf5c9-7e75-4ad5-86dc-520cd8c0e9b2"
       }
     },
-    "owner": "suresh_seema",
+    "owner": "suresh-seema",
     "description": "Advanced mobile security monitoring and threat detection app with AI-powered analysis. Protect your device with real-time threat detection, network monitoring, and comprehensive security analysis.",
     "keywords": [
       "security",
@@ -149,12 +158,12 @@
     ],
     "primaryColor": "#4CAF50",
     "backgroundColor": "#1a1a2e",
-    "privacy": "https://pocketshield.com/privacy-policy",
-    "privacyPolicy": "https://pocketshield.com/privacy-policy",
-    "termsOfService": "https://pocketshield.com/terms-of-service",
+    "privacy": "https://pocketshield.io/privacy",
+    "privacyPolicy": "https://pocketshield.io/privacy",
+    "termsOfService": "https://pocketshield.io/terms",
     "contact": {
-      "email": "support@pocketshield.com",
-      "website": "https://pocketshield.com"
+      "email": "support@pocketshield.io",
+      "website": "https://pocketshield.io"
     }
   }
 }
