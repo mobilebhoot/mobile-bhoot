@@ -1,6 +1,6 @@
 /**
- * Enhanced Authentication Screen
- * Supports Gmail Login/Signup and Mobile OTP Authentication
+ * Authentication Screen
+ * Pure Firebase Auth - Google Sign-In and Email/Password only
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -22,13 +22,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signInWithCredential, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { signInWithCredential, GoogleAuthProvider, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import PocketShieldLogo from '../components/PocketShieldLogo';
 
+// Pure Firebase Auth - using expo-auth-session to get Google token, then Firebase handles auth
 WebBrowser.maybeCompleteAuthSession();
 
 const { width, height } = Dimensions.get('window');
@@ -37,7 +38,6 @@ export default function AuthenticationScreen({ navigation }) {
   const { t } = useTranslation();
   
   // Authentication states
-  const [authMethod, setAuthMethod] = useState(null); // 'gmail', 'email', or 'mobile'
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
@@ -51,18 +51,36 @@ export default function AuthenticationScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  // Google Authentication Configuration
-  // Using Expo auth proxy for consistent redirect URIs
+  // Google OAuth Configuration - gets token, then Firebase handles authentication
   const [request, response, promptAsync] = Google.useAuthRequest({
     clientId: '739358674832-ita1kkj3pqavb0svlb835ub2g5dioa1t.apps.googleusercontent.com',
     iosClientId: '739358674832-ita1kkj3pqavb0svlb835ub2g5dioa1t.apps.googleusercontent.com',
     androidClientId: '739358674832-ita1kkj3pqavb0svlb835ub2g5dioa1t.apps.googleusercontent.com',
     scopes: ['profile', 'email'],
-    // Force use of Expo auth proxy instead of local exp:// URLs
-    redirectUri: 'https://auth.expo.io/@suresh_seema/pocketshield',
-    // Explicitly use Expo's proxy
-    useProxy: true,
+    useProxy: true, // Works in Expo Go
   });
+
+  // Handle Google Auth Response - Pure Firebase Auth
+  useEffect(() => {
+    if (!response || response.type !== 'success') {
+      if (response?.type === 'error') {
+        console.error('❌ Google OAuth error:', response.error);
+        Alert.alert('Authentication Error', `Google sign-in failed: ${response.error?.message || 'Unknown error'}`);
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    const { authentication } = response;
+    if (authentication?.idToken) {
+      console.log('✅ Google token received, signing in to Firebase...');
+      handleGoogleAuthSuccess(authentication.idToken);
+    } else {
+      console.error('❌ Missing idToken in response');
+      Alert.alert('Authentication Error', 'Google authentication failed: Missing ID token.');
+      setIsLoading(false);
+    }
+  }, [response]);
 
   useEffect(() => {
     // Initialize animation
@@ -86,51 +104,7 @@ export default function AuthenticationScreen({ navigation }) {
     checkExistingAuth();
   }, []);
 
-  // Handle Google Auth Response
-  useEffect(() => {
-    if (!response) {
-      return; // No response yet
-    }
-    
-    console.log('🔄 Google Auth Response received:', response?.type);
-    console.log('📋 Full response object:', JSON.stringify(response, null, 2));
-    
-    if (response?.type === 'success') {
-      const { authentication } = response;
-      console.log('✅ Google OAuth response received from Expo');
-      console.log('📋 Authentication object keys:', Object.keys(authentication));
-      console.log('📋 Full response:', JSON.stringify(response, null, 2));
-      
-      // Verify we have the required tokens
-      if (!authentication?.idToken) {
-        console.error('❌ Missing idToken in response:', authentication);
-        Alert.alert('Authentication Error', 'Google authentication failed: Missing ID token. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Proceed to Firebase sign-in
-      handleGoogleAuthSuccess(authentication);
-    } else if (response?.type === 'error') {
-      console.error('❌ Google OAuth error:', response.error);
-      console.error('❌ Error code:', response.error?.code);
-      console.error('❌ Error message:', response.error?.message);
-      Alert.alert(
-        'Authentication Error', 
-        `Failed to authenticate with Google: ${response.error?.message || 'Unknown error'}. Please check your OAuth configuration.`
-      );
-      setIsLoading(false);
-    } else if (response?.type === 'dismiss') {
-      console.log('⚠️ User dismissed Google OAuth');
-      setIsLoading(false);
-    } else if (response?.type === 'cancel') {
-      console.log('⚠️ User cancelled Google OAuth');
-      setIsLoading(false);
-    } else if (response) {
-      console.log('⚠️ Unknown response type:', response.type);
-      console.log('📋 Full response:', JSON.stringify(response, null, 2));
-    }
-  }, [response]);
+  // Pure Firebase Auth - no response handler needed
 
   /**
    * Check for existing authentication
@@ -152,38 +126,23 @@ export default function AuthenticationScreen({ navigation }) {
   };
 
   /**
-   * Handle Google Authentication Success
-   * Exchanges Google OAuth token for Firebase credential and signs in
+   * Handle Google Sign-In with Pure Firebase Auth
+   * Uses native Google Sign-In SDK (like Zepto/Zomato)
    */
-  const handleGoogleAuthSuccess = async (authentication) => {
+  const handleGoogleAuthSuccess = async (idToken) => {
     try {
       setIsLoading(true);
       
-      console.log('Google OAuth successful, exchanging for Firebase credential...');
-      console.log('Authentication object:', JSON.stringify(authentication, null, 2));
-
-      // Create Firebase credential from Google OAuth token
-      const { idToken, accessToken } = authentication;
-      
-      if (!idToken) {
-        console.error('❌ Missing idToken in authentication response:', authentication);
-        throw new Error('Google ID token is missing. Please ensure OAuth is properly configured.');
-      }
-      
-      if (!accessToken) {
-        console.warn('⚠️ Missing accessToken, but idToken is present. Continuing...');
-      }
-
-      // Create Google Auth Provider credential
-      console.log('🔑 Creating Firebase credential from Google OAuth token...');
-      console.log('📋 idToken present:', !!idToken);
-      console.log('📋 accessToken present:', !!accessToken);
+      console.log('🔐 Pure Firebase Google Sign-In - Exchanging token...');
+      console.log('📋 idToken received from Google OAuth');
       
       if (!idToken) {
         throw new Error('Google ID token is missing. Cannot create Firebase credential.');
       }
-      
-      const credential = GoogleAuthProvider.credential(idToken, accessToken);
+
+      // Create Firebase credential from Google ID token (pure Firebase approach)
+      console.log('🔑 Creating Firebase credential from Google ID token...');
+      const credential = GoogleAuthProvider.credential(idToken);
       console.log('✅ Firebase credential created successfully');
       
       // Sign in to Firebase with the credential
@@ -282,7 +241,8 @@ export default function AuthenticationScreen({ navigation }) {
   };
 
   /**
-   * Handle Gmail Login
+   * Handle Google Sign-In - Pure Firebase Auth
+   * Uses expo-auth-session to get Google token, then Firebase handles authentication
    */
   const handleGmailLogin = async () => {
     if (!request) {
@@ -290,16 +250,11 @@ export default function AuthenticationScreen({ navigation }) {
       return;
     }
 
-    console.log('🚀 Starting Google OAuth flow...');
-    console.log('📋 Request object:', request ? 'Available' : 'Missing');
-    console.log('📋 Redirect URI:', 'https://auth.expo.io/@suresh_seema/pocketshield');
-    console.log('📋 Client ID:', '739358674832-ita1kkj3pqavb0svlb835ub2g5dioa1t.apps.googleusercontent.com');
-    
     setIsLoading(true);
     try {
       await promptAsync();
     } catch (error) {
-      console.error('❌ Error starting OAuth:', error);
+      console.error('❌ Error starting Google sign-in:', error);
       Alert.alert('Error', `Failed to start Google sign-in: ${error.message}`);
       setIsLoading(false);
     }
@@ -325,7 +280,7 @@ export default function AuthenticationScreen({ navigation }) {
     }
 
     try {
-      setIsLoading(true);
+    setIsLoading(true);
       
       // Create user with email and password in Firebase
       console.log('🔐 Creating user with email/password...');
@@ -527,7 +482,7 @@ export default function AuthenticationScreen({ navigation }) {
             loginTime: new Date().toISOString()
           }));
 
-          Alert.alert(
+      Alert.alert(
             '🎉 Account Created!',
             `Welcome! Your account has been created and you're now signed in.`,
             [
@@ -582,50 +537,6 @@ export default function AuthenticationScreen({ navigation }) {
     return emailRegex.test(email);
   };
 
-  /**
-   * Handle Skip Login for Testing
-   */
-  const handleSkipLogin = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Create test user session
-      const testUser = {
-        id: 'test_user_' + Date.now(),
-        name: 'Test User',
-        email: 'test@pocketshield.app',
-        picture: null,
-        authMethod: 'skip_login',
-        loginTime: new Date().toISOString(),
-        isTestMode: true
-      };
-
-      // Store test session data
-      await AsyncStorage.setItem('authToken', 'test_token_' + Date.now());
-      await AsyncStorage.setItem('userInfo', JSON.stringify(testUser));
-
-      // Show success message
-      Alert.alert(
-        '🧪 Test Mode Active',
-        'You\'ve skipped login for testing. All features are available in test mode.',
-        [
-          {
-            text: 'Continue to App',
-            onPress: () => navigation.replace('Main')
-          }
-        ]
-      );
-
-    } catch (error) {
-      console.error('Skip login failed:', error);
-      Alert.alert(
-        'Error',
-        'Failed to create test session. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
 
   /**
@@ -697,20 +608,20 @@ export default function AuthenticationScreen({ navigation }) {
               </TouchableOpacity>
 
                   {/* Email/Password Login Button */}
-                  <TouchableOpacity
+              <TouchableOpacity
                     style={[styles.authButton, styles.emailButton]}
                     onPress={() => setShowEmailLogin(true)}
-                    disabled={isLoading}
-                  >
-                    <View style={styles.authButtonContent}>
-                      <View style={styles.authIconContainer}>
+                disabled={isLoading}
+              >
+                <View style={styles.authButtonContent}>
+                  <View style={styles.authIconContainer}>
                         <Ionicons name="mail" size={24} color="#fff" />
-                      </View>
+                  </View>
                       <Text style={styles.authButtonText}>
                         Sign in with Email
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                  </Text>
+                </View>
+              </TouchableOpacity>
                 </>
               ) : (
                 <>
@@ -766,7 +677,7 @@ export default function AuthenticationScreen({ navigation }) {
                           color="#888"
                         />
                       </TouchableOpacity>
-                    </View>
+              </View>
 
                     <TouchableOpacity
                       style={[styles.authButton, styles.submitButton]}
@@ -775,7 +686,7 @@ export default function AuthenticationScreen({ navigation }) {
                     >
                       <Text style={styles.authButtonText}>
                         {isLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
-                      </Text>
+                </Text>
                       {isLoading && (
                         <ActivityIndicator size="small" color="#fff" style={styles.buttonLoader} />
                       )}
@@ -792,7 +703,7 @@ export default function AuthenticationScreen({ navigation }) {
                     >
                       <Text style={styles.switchAuthText}>
                         {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-                      </Text>
+                </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -807,42 +718,9 @@ export default function AuthenticationScreen({ navigation }) {
                     >
                       <Text style={styles.backButtonText}>← Back to login options</Text>
                     </TouchableOpacity>
-                  </View>
+              </View>
                 </>
               )}
-
-              {/* Skip Login for Testing */}
-              <TouchableOpacity
-                style={[styles.authButton, styles.skipButton]}
-                onPress={handleSkipLogin}
-                disabled={isLoading}
-              >
-                <View style={styles.authButtonContent}>
-                  <View style={styles.authIconContainer}>
-                    <Ionicons name="play-skip-forward" size={24} color="#FF9800" />
-                  </View>
-                  <Text style={[styles.authButtonText, styles.skipButtonText]}>
-                    Skip Login (Testing)
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Additional Info */}
-              <View style={styles.infoContainer}>
-                <Text style={styles.infoText}>
-                  🔒 Production: Use Google for secure authentication
-                </Text>
-                <Text style={styles.infoSubText}>
-                  🧪 Testing: Skip login to explore all features
-                </Text>
-              </View>
             </View>
 
             {/* Features Preview */}
@@ -970,11 +848,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     marginTop: 20,
   },
-  skipButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#FF9800',
-  },
   authButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -990,46 +863,8 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  skipButtonText: {
-    color: '#FF9800',
-  },
   buttonLoader: {
     marginLeft: 10,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 15,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#444',
-  },
-  dividerText: {
-    color: '#888',
-    fontSize: 12,
-    paddingHorizontal: 15,
-    fontWeight: '500',
-  },
-  infoContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 15,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#4CAF50',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  infoSubText: {
-    fontSize: 12,
-    color: '#ccc',
-    textAlign: 'center',
-    marginTop: 5,
   },
   featuresSection: {
     marginBottom: 30,
